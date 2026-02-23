@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טופס 101 - כרטיס עובד / פרטי עובד והצהרת עובד</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            background-color: #ecf0f1;
+            padding: 10px 15px;
+            border-right: 4px solid #3498db;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        
+        fieldset {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+        
+        legend {
+            font-weight: bold;
+            color: #34495e;
+            padding: 0 10px;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .form-group.full-width {
+            grid-template-columns: 1fr;
+        }
+        
+        label {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="email"],
+        input[type="tel"],
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            direction: inherit;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        
+        .radio-group,
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .radio-group label,
+        .checkbox-group label {
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input[type="radio"],
+        input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        
+        .address-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: right;
+        }
+        
+        table th {
+            background-color: #ecf0f1;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        table input[type="text"],
+        table input[type="date"] {
+            width: 100%;
+        }
+        
+        .declaration {
+            background-color: #fff9e6;
+            border: 2px solid #f39c12;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 25px 0;
+        }
+        
+        .declaration p {
+            margin: 0 0 15px 0;
+            line-height: 1.8;
+        }
+        
+        .signature-pad-container {
+            margin-top: 15px;
+        }
+        
+        .signature-pad {
+            border: 2px solid #3498db;
+            border-radius: 4px;
+            cursor: crosshair;
+            display: block;
+            background-color: white;
+        }
+        
+        .signature-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .signature-controls button {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .signature-controls button:hover {
+            background-color: #e9ecef;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .submit-section {
+            text-align: center;
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        button[type="submit"],
+        button[type="button"] {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button[type="submit"]:hover,
+        button[type="button"]:hover {
+            background-color: #2980b9;
+        }
+        
+        button[type="submit"]:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .generate-pdf-button {
+            background-color: #27ae60;
+        }
+        
+        .generate-pdf-button:hover {
+            background-color: #229954;
+        }
+        
+        .preview-button {
+            background-color: #f39c12;
+        }
+        
+        .preview-button:hover {
+            background-color: #e67e22;
+        }
+        
+        .required-mark::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        /* תצוגה מקדימה */
+        #preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        #preview-content {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        #preview-close {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #preview-close:hover {
+            background-color: #c0392b;
+        }
+        
+        .preview-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .preview-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview-row {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        
+        .preview-label {
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .preview-value {
+            color: #2c3e50;
+        }
+        
+        .preview-signature {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .preview-signature img {
+            max-width: 300px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>טופס 101 - כרטיס עובד / פרטי עובד והצהרת עובד</h1>
+        
+        <div id="alert-container"></div>
+        
+        <form id="form101">
+            
+            <!-- סעיף 1: פרטי עובד -->
+            <h2>1. פרטי עובד</h2>
+            <fieldset>
+                <legend>מידע אישי</legend>
+                
+                <div class="form-group">
+                    <label for="employee_id" class="required-mark">מספר תעודת זהות</label>
+                    <input type="text" id="employee_id" name="employee_id" required maxlength="9">
+                </div>
+                
+                <div class="form-group">
+                    <label for="first_name" class="required-mark">שם פרטי</label>
+                    <input type="text" id="first_name" name="first_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="last_name" class="required-mark">שם משפחה</label>
+                    <input type="text" id="last_name" name="last_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="birth_date" class="required-mark">תאריך לידה</label>
+                    <input type="date" id="birth_date" name="birth_date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="birth_country">ארץ לידה</label>
+                    <input type="text" id="birth_country" name="birth_country">
+                </div>
+                
+                <div class="form-group">
+                    <label for="citizenship">אזרחות</label>
+                    <input type="text" id="citizenship" name="citizenship">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>כתובת</legend>
+                
+                <div class="address-grid">
+                    <div class="form-group">
+                        <label for="street" class="required-mark">רחוב</label>
+                        <input type="text" id="street" name="street" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="house_number" class="required-mark">מספר בית</label>
+                        <input type="text" id="house_number" name="house_number" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="city" class="required-mark">עיר / יישוב</label>
+                        <input type="text" id="city" name="city" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="postal_code">מיקוד</label>
+                        <input type="text" id="postal_code" name="postal_code" maxlength="7">
+                    </div>
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>פרטי התקשרות</legend>
+                
+                <div class="form-group">
+                    <label for="mobile_phone" class="required-mark">טלפון נייד</label>
+                    <input type="tel" id="mobile_phone" name="mobile_phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="additional_phone">טלפון נוסף</label>
+                    <input type="tel" id="additional_phone" name="additional_phone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="required-mark">דוא"ל</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+            </fieldset>
+            
+            <!-- סעיף 2: תושבות לצורכי מס -->
+            <h2>2. תושבות לצורכי מס</h2>
+            <fieldset>
+                <legend>סטטוס תושבות</legend>
+                
+                <div class="form-group full-width">
+                    <label class="required-mark">האם אתה תושב/ת ישראל לצורכי מס?</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" id="resident_yes" name="tax_resident" value="yes" required>
+                            אני תושב/ת ישראל לצורכי מס
+                        </label>
+                        <label>
+                            <input type="radio" id="resident_no" name="tax_resident" value="no">
+                            איני תושב/ת ישראל לצורכי מס
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group hidden" id="non_resident_fields">
+                    <label for="passport_visa_number">מספר ויזה / דרכון</label>
+                    <input type="text" id="passport_visa_number" name="passport_visa_number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="residence_country">מדינת תושבות (אם לא תושב ישראל)</label>
+                    <input type="text" id="residence_country" name="residence_country">
+                </div>
+                
+                <div class="form-group">
+                    <label for="aliyah_date">תאריך עלייה לישראל</label>
+                    <input type="date" id="aliyah_date" name="aliyah_date">
+                </div>
+                
+                <div class="form-group">
+                    <label for="return_date">תאריך חזרה לישראל (תושב חוזר)</label>
+                    <input type="date" id="return_date" name="return_date">
+                </div>
+            </fieldset>
+            
+            <!-- סעיף 3: פרטי עבודה והכנסה -->
+            <h2>3. פרטי עבודה והכנסה</h2>
+            <fieldset>
+                <legend>פרטי תעסוקה</legend>
+                
+                <div class="form-group">
+                    <label for="start_date" class="required-mark">תאריך תחילת עבודה</label>
+                    <input type="date" id="start_date" name="start_date" required>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label class="required-mark">האם זוהי ההכנסה העיקרית שלך?</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" id="main_income_yes" name="main_income" value="yes" required>
+                            כן
+                        </label>
+                        <label>
+                            <input type="radio" id="main_income_no" name="main_income" value="no">
+                            לא
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label class="required-mark">האם קיימות הכנסות נוספות ממשכורת/פנסיה/קצבה?</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" id="additional_income_yes" name="additional_income" value="yes" required>
+                            כן
+                        </label>
+                        <label>
+                            <input type="radio" id="additional_income_no" name="additional_income" value="no">
+                            לא
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="additional_income_details">פירוט הכנסות נוספות</label>
+                    <input type="text" id="additional_income_details" name="additional_income_details">
+                </div>
+            </fieldset>
+            
+            <!-- סעיף 4: מצב משפחתי ובן/בת זוג -->
+            <h2>4. מצב משפחתי ופרטי בן/בת זוג</h2>
+            <fieldset>
+                <legend>מצב משפחתי</legend>
+                
+                <div class="form-group">
+                    <label for="marital_status" class="required-mark">מצב משפחתי</label>
+                    <select id="marital_status" name="marital_status" required>
+                        <option value="">בחר/י...</option>
+                        <option value="single">רווק/ה</option>
+                        <option value="married">נשוי/אה</option>
+                        <option value="divorced">גרוש/ה</option>
+                        <option value="widowed">אלמן/ה</option>
+                        <option value="common_law">ידוע/ה בציבור</option>
+                    </select>
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>פרטי בן/בת זוג (אם רלוונטי)</legend>
+                
+                <div class="form-group">
+                    <label for="spouse_first_name">שם פרטי של בן/בת הזוג</label>
+                    <input type="text" id="spouse_first_name" name="spouse_first_name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="spouse_last_name">שם משפחה של בן/בת הזוג</label>
+                    <input type="text" id="spouse_last_name" name="spouse_last_name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="spouse_id">מספר ת"ז של בן/בת הזוג</label>
+                    <input type="text" id="spouse_id" name="spouse_id" maxlength="9">
+                </div>
+                
+                <div class="form-group">
+                    <label for="spouse_birth_date">תאריך לידה של בן/בת הזוג</label>
+                    <input type="date" id="spouse_birth_date" name="spouse_birth_date">
+                </div>
+                
+                <div class="form-group full-width">
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="spouse_resident" name="spouse_resident" value="yes">
+                            בן/בת הזוג תושב/ת ישראל
+                        </label>
+                        <label>
+                            <input type="checkbox" id="spouse_has_income" name="spouse_has_income" value="yes">
+                            לבן/בת הזוג יש הכנסות מעבודה / מעסק
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+            
+            <!-- סעיף 5: ילדים ונקודות זיכוי -->
+            <h2>5. פרטי ילדים לצורך נקודות זיכוי</h2>
+            <fieldset>
+                <legend>ילדים</legend>
+                
+                <table id="children-table">
+                    <thead>
+                        <tr>
+                            <th>שם הילד</th>
+                            <th>ת"ז הילד</th>
+                            <th>תאריך לידה</th>
+                            <th>גר איתי</th>
+                            <th>עם מוגבלות</th>
+                            <th>הערות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="text" name="child_1_name"></td>
+                            <td><input type="text" name="child_1_id" maxlength="9"></td>
+                            <td><input type="date" name="child_1_birth"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_1_lives_with"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_1_disability"></td>
+                            <td><input type="text" name="child_1_notes"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="child_2_name"></td>
+                            <td><input type="text" name="child_2_id" maxlength="9"></td>
+                            <td><input type="date" name="child_2_birth"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_2_lives_with"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_2_disability"></td>
+                            <td><input type="text" name="child_2_notes"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="child_3_name"></td>
+                            <td><input type="text" name="child_3_id" maxlength="9"></td>
+                            <td><input type="date" name="child_3_birth"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_3_lives_with"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_3_disability"></td>
+                            <td><input type="text" name="child_3_notes"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="child_4_name"></td>
+                            <td><input type="text" name="child_4_id" maxlength="9"></td>
+                            <td><input type="date" name="child_4_birth"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_4_lives_with"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_4_disability"></td>
+                            <td><input type="text" name="child_4_notes"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="child_5_name"></td>
+                            <td><input type="text" name="child_5_id" maxlength="9"></td>
+                            <td><input type="date" name="child_5_birth"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_5_lives_with"></td>
+                            <td style="text-align: center;"><input type="checkbox" name="child_5_disability"></td>
+                            <td><input type="text" name="child_5_notes"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+            
+            <!-- סעיף 6: הכנסות נוספות -->
+            <h2>6. הכנסות נוספות / קצבאות / פנסיה</h2>
+            <fieldset>
+                <legend>סוגי הכנסות נוספות</legend>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="extra_salary" name="extra_salary" value="yes">
+                        יש לי הכנסה נוספת ממשכורת
+                    </label>
+                    
+                    <label>
+                        <input type="checkbox" id="pension_income" name="pension_income" value="yes">
+                        יש לי הכנסה מקצבה
+                    </label>
+                    
+                    <label>
+                        <input type="checkbox" id="business_income" name="business_income" value="yes">
+                        יש לי הכנסה מעסק / כעצמאי/ת
+                    </label>
+                    
+                    <label>
+                        <input type="checkbox" id="retirement_income" name="retirement_income" value="yes">
+                        אני מקבל/ת פנסיה
+                    </label>
+                    
+                    <label>
+                        <input type="checkbox" id="tax_coordination" name="tax_coordination" value="yes">
+                        בוצע עבורי תיאום מס
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tax_coordination_details">מספר / פירוט תיאום מס</label>
+                    <input type="text" id="tax_coordination_details" name="tax_coordination_details">
+                </div>
+            </fieldset>
+            
+            <!-- סעיף 7: זכאויות מיוחדות -->
+            <h2>7. זכאויות מיוחדות לזיכוי מס</h2>
+            <fieldset>
+                <legend>שירות צבאי ולאומי</legend>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="discharged_soldier" name="discharged_soldier" value="yes">
+                        אני חייל/ת משוחרר/ת או סיימתי שירות לאומי/אזרחי
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="discharge_date">תאריך שחרור / סיום שירות</label>
+                    <input type="date" id="discharge_date" name="discharge_date">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>לימודים אקדמיים</legend>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="academic_degree" name="academic_degree" value="yes">
+                        למדתי לימודים אקדמיים המזכים בנקודות זיכוי
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="degree_type">סוג תואר / מוסד לימודים</label>
+                    <input type="text" id="degree_type" name="degree_type">
+                </div>
+                
+                <div class="form-group">
+                    <label for="degree_completion_date">תאריך סיום לימודים</label>
+                    <input type="date" id="degree_completion_date" name="degree_completion_date">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>עלייה וחזרה לישראל</legend>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="new_immigrant" name="new_immigrant" value="yes">
+                        אני עולה חדש / תושב חוזר
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="immigration_date">תאריך עלייה / חזרה</label>
+                    <input type="date" id="immigration_date" name="immigration_date">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>יישוב מזכה</legend>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="eligible_settlement" name="eligible_settlement" value="yes">
+                        אני מתגורר/ת ביישוב המזכה בהטבת מס
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="settlement_name">שם היישוב</label>
+                    <input type="text" id="settlement_name" name="settlement_name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="settlement_start_date">תאריך תחילת מגורים ביישוב</label>
+                    <input type="date" id="settlement_start_date" name="settlement_start_date">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>נכויות</legend>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="personal_disability" name="personal_disability" value="yes">
+                        יש לי נכות רפואית המזכה בהטבת מס מאושרת ע"י פקיד שומה
+                    </label>
+                    
+                    <label>
+                        <input type="checkbox" id="family_disability" name="family_disability" value="yes">
+                        יש לי ילד / בן משפחה עם נכות רפואית המזכה בהטבת מס
+                    </label>
+                </div>
+            </fieldset>
+            
+            <!-- סעיף 8: הצהרה וחתימה -->
+            <h2>8. הצהרה וחתימה</h2>
+            <div class="declaration">
+                <p>
+                    <strong>הצהרת העובד:</strong><br>
+                    אני מצהיר/ה כי כל הפרטים שמסרתי בטופס זה נכונים ומלאים, וכי ידוע לי כי מסירת פרטים לא נכונים 
+                    עלולה להיחשב עבירה לפי חוק עבירות מס, התשנ"ד-1994, וכי עלי להודיע למעסיק על כל שינוי בפרטים 
+                    אלה תוך 30 יום ממועד השינוי.
+                </p>
+                
+                <fieldset>
+                    <legend>חתימה</legend>
+                    
+                    <div class="form-group full-width">
+                        <label class="required-mark">חתימה דיגיטלית</label>
+                        <div class="signature-pad-container">
+                            <canvas id="signature-pad" class="signature-pad" width="600" height="200"></canvas>
+                            <div class="signature-controls">
+                                <button type="button" id="clear-signature">נקה חתימה</button>
+                                <button type="button" id="undo-signature">בטל פעולה אחרונה</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="confirm_accuracy" name="confirm_accuracy" value="yes" required>
+                                <strong class="required-mark">אני מאשר/ת כי הפרטים שמולאו בטופס זה נכונים</strong>
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            
+            <div class="submit-section">
+                <button type="button" class="preview-button" id="preview-btn">
+                    תצוגה מקדימה
+                </button>
+                <button type="button" class="generate-pdf-button" id="generate-pdf-btn">
+                    <span id="btn-text">יצירת PDF ממולא</span>
+                    <span id="btn-loading" class="hidden"><span class="loading"></span> מייצר PDF...</span>
+                </button>
+            </div>
+            
+        </form>
+    </div>
+    
+    <!-- מודל תצוגה מקדימה -->
+    <div id="preview-modal" class="hidden">
+        <div id="preview-content">
+            <button id="preview-close">סגור תצוגה מקדימה</button>
+            <h1 style="text-align: center;">טופס 101 - תצוגה מקדימה</h1>
+            <div id="preview-body"></div>
+        </div>
+    </div>
+    
+    <!-- PDF-LIB מ-CDN -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    
+    <script>
+        // המתנה לטעינת הספריה
+        window.addEventListener('load', async function() {
+            
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        
+        // חתימה דיגיטלית
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let strokes = [];
+        let currentStroke = [];
+        
+        canvas.style.direction = 'ltr';
+        
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+            currentStroke = [{x: lastX, y: lastY}];
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            currentStroke.push({x, y});
+            [lastX, lastY] = [x, y];
+        }
+        
+        function stopDrawing() {
+            if (isDrawing && currentStroke.length > 0) {
+                strokes.push([...currentStroke]);
+                currentStroke = [];
+            }
+            isDrawing = false;
+        }
+        
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        document.getElementById('clear-signature').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes = [];
+            currentStroke = [];
+        });
+        
+        document.getElementById('undo-signature').addEventListener('click', () => {
+            if (strokes.length > 0) {
+                strokes.pop();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                strokes.forEach(stroke => {
+                    ctx.beginPath();
+                    ctx.moveTo(stroke[0].x, stroke[0].y);
+                    stroke.forEach(point => {
+                        ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.stroke();
+                });
+            }
+        });
+        
+        // הצגת/הסתרת שדה ויזה/דרכון
+        document.querySelectorAll('input[name="tax_resident"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const nonResidentFields = document.getElementById('non_resident_fields');
+                if (e.target.value === 'no') {
+                    nonResidentFields.classList.remove('hidden');
+                } else {
+                    nonResidentFields.classList.add('hidden');
+                }
+            });
+        });
+        
+        // פונקציה לאיסוף נתוני הטופס
+        function collectFormData() {
+            const formData = new FormData(document.getElementById('form101'));
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (value) {
+                    data[key] = value;
+                }
+            }
+            
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                data[cb.name] = cb.checked;
+            });
+            
+            data.children = [];
+            for (let i = 1; i <= 5; i++) {
+                const name = formData.get(`child_${i}_name`);
+                if (name) {
+                    data.children.push({
+                        name: name,
+                        id: formData.get(`child_${i}_id`) || '',
+                        birth_date: formData.get(`child_${i}_birth`) || '',
+                        lives_with: document.querySelector(`input[name="child_${i}_lives_with"]`)?.checked || false,
+                        disability: document.querySelector(`input[name="child_${i}_disability"]`)?.checked || false,
+                        notes: formData.get(`child_${i}_notes`) || ''
+                    });
+                }
+            }
+            
+            data.signature_data = canvas.toDataURL();
+            
+            return data;
+        }
+        
+        // פונקציה להצגת התראה
+        function showAlert(message, type = 'success') {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        // פונקציית המרת תאריך
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const [year, month, day] = dateStr.split('-');
+                return `${day}/${month}/${year}`;
+            } catch {
+                return dateStr;
+            }
+        }
+        
+        // יצירת PDF
+        async function generatePDF(data) {
+            // שליחת נתונים ל-Make (Webhook)
+            try {
+                // החלף את ה-URL הזה ב-Webhook URL שלך מ-Make
+                const MAKE_WEBHOOK_URL = 'YOUR_MAKE_WEBHOOK_URL_HERE';
+                
+                if (MAKE_WEBHOOK_URL !== 'YOUR_MAKE_WEBHOOK_URL_HERE') {
+                    await fetch(MAKE_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            ...data,
+                            timestamp: new Date().toISOString(),
+                            form_type: 'form_101'
+                        })
+                    });
+                    console.log('✅ נתונים נשלחו ל-Make בהצלחה');
+                }
+            } catch (error) {
+                console.error('⚠️ שגיאה בשליחה ל-Make:', error);
+                // ממשיכים ליצור PDF גם אם Webhook נכשל
+            }
+            
+            // יצירת PDF חדש
+            const pdfDoc = await PDFDocument.create();
+            const page = pdfDoc.addPage([595, 842]); // A4
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const fontSize = 9;
+            
+            const { width, height } = page.getSize();
+            
+            // כתיבת טקסט בסיסי
+            page.drawText('Form 101 - Employee Card', {
+                x: 250,
+                y: height - 50,
+                size: 14,
+                font,
+                color: rgb(0, 0, 0),
+            });
+            
+            // פרטי עובד
+            let yPos = height - 100;
+            
+            if (data.employee_id) {
+                page.drawText(`ID: ${data.employee_id}`, { x: 400, y: yPos, size: fontSize, font });
+                yPos -= 20;
+            }
+            
+            if (data.first_name && data.last_name) {
+                page.drawText(`Name: ${data.first_name} ${data.last_name}`, { x: 400, y: yPos, size: fontSize, font });
+                yPos -= 20;
+            }
+            
+            if (data.birth_date) {
+                page.drawText(`Birth Date: ${formatDate(data.birth_date)}`, { x: 400, y: yPos, size: fontSize, font });
+                yPos -= 20;
+            }
+            
+            if (data.street && data.city) {
+                page.drawText(`Address: ${data.street} ${data.house_number}, ${data.city}`, { x: 400, y: yPos, size: fontSize, font });
+                yPos -= 20;
+            }
+            
+            if (data.mobile_phone) {
+                page.drawText(`Phone: ${data.mobile_phone}`, { x: 400, y: yPos, size: fontSize, font });
+                yPos -= 20;
+            }
+            
+            if (data.email) {
+                page.drawText(`Email: ${data.email}`, { x: 400, y: yPos, size: fontSize, font });
+                yPos -= 20;
+            }
+            
+            // חתימה
+            if (data.signature_data) {
+                try {
+                    const signatureImage = await pdfDoc.embedPng(data.signature_data);
+                    const signatureDims = signatureImage.scale(0.25);
+                    page.drawImage(signatureImage, {
+                        x: 50,
+                        y: 50,
+                        width: signatureDims.width,
+                        height: signatureDims.height,
+                    });
+                } catch (e) {
+                    console.error('Error embedding signature:', e);
+                }
+            }
+            
+            return await pdfDoc.save();
+        }
+        
+        // טיפול ביצירת PDF
+        document.getElementById('generate-pdf-btn').addEventListener('click', async () => {
+            const form = document.getElementById('form101');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            const btnText = document.getElementById('btn-text');
+            const btnLoading = document.getElementById('btn-loading');
+            const btn = document.getElementById('generate-pdf-btn');
+            
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            btn.disabled = true;
+            
+            try {
+                const data = collectFormData();
+                const pdfBytes = await generatePDF(data);
+                
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const suggestedFilename = `form_101_${data.employee_id}_${data.last_name}.pdf`;
+                
+                // ניסיון להשתמש ב-File System Access API
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: suggestedFilename,
+                            types: [{
+                                description: 'PDF Files',
+                                accept: { 'application/pdf': ['.pdf'] }
+                            }]
+                        });
+                        
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        
+                        showAlert('✅ טופס 101 נשמר בהצלחה!', 'success');
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            downloadBlob(blob, suggestedFilename);
+                        }
+                    }
+                } else {
+                    downloadBlob(blob, suggestedFilename);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('❌ שגיאה: ' + error.message, 'error');
+            } finally {
+                btnText.classList.remove('hidden');
+                btnLoading.classList.add('hidden');
+                btn.disabled = false;
+            }
+        });
+        
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            a.remove();
+            showAlert('✅ טופס 101 הורד בהצלחה!', 'success');
+        }
+        
+        // תצוגה מקדימה - הוספת הקוד מהגרסה הקודמת
+        document.getElementById('preview-btn').addEventListener('click', () => {
+            const formData = new FormData(document.getElementById('form101'));
+            const previewBody = document.getElementById('preview-body');
+            previewBody.innerHTML = '';
+            
+            let section = createPreviewSection('פרטי עובד');
+            addPreviewRow(section, 'מספר תעודת זהות', formData.get('employee_id'));
+            addPreviewRow(section, 'שם מלא', `${formData.get('first_name')} ${formData.get('last_name')}`);
+            addPreviewRow(section, 'תאריך לידה', formData.get('birth_date'));
+            addPreviewRow(section, 'כתובת', `${formData.get('street')} ${formData.get('house_number')}, ${formData.get('city')}`);
+            addPreviewRow(section, 'טלפון נייד', formData.get('mobile_phone'));
+            addPreviewRow(section, 'דוא"ל', formData.get('email'));
+            previewBody.appendChild(section);
+            
+            const signatureDiv = document.createElement('div');
+            signatureDiv.className = 'preview-signature';
+            signatureDiv.innerHTML = '<strong>חתימה דיגיטלית:</strong><br>';
+            const signatureImg = document.createElement('img');
+            signatureImg.src = canvas.toDataURL();
+            signatureDiv.appendChild(signatureImg);
+            section.appendChild(signatureDiv);
+            
+            document.getElementById('preview-modal').classList.remove('hidden');
+        });
+        
+        document.getElementById('preview-close').addEventListener('click', () => {
+            document.getElementById('preview-modal').classList.add('hidden');
+        });
+        
+        function createPreviewSection(title) {
+            const section = document.createElement('div');
+            section.className = 'preview-section';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            section.appendChild(h3);
+            return section;
+        }
+        
+        function addPreviewRow(section, label, value) {
+            if (!value) return;
+            const row = document.createElement('div');
+            row.className = 'preview-row';
+            row.innerHTML = `
+                <div class="preview-label">${label}:</div>
+                <div class="preview-value">${value}</div>
+            `;
+            section.appendChild(row);
+        }
+        
+        }); // סגירת window.addEventListener
+    </script>
+</body>
+</html>
