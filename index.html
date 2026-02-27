@@ -441,7 +441,7 @@
                     </div>
                     <div class="form-group">
                         <label>תאריך עליה</label>
-                        <input type="date" name="aliyah_date">
+                        <input type="date" name="aliya_date">
                     </div>
                 </div>
 
@@ -720,11 +720,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>מספר תעודת זהות (9 ספרות)</label>
-                            <input type="text" name="spouse_id" pattern="[0-9]{9}" maxlength="9">
+                            <input type="text" name="spouse_id_number" pattern="[0-9]{9}" maxlength="9">
                         </div>
                         <div class="form-group">
                             <label>מספר דרכון (למי שאין ת.ז)</label>
-                            <input type="text" name="spouse_passport">
+                            <input type="text" name="spouse_passport_number">
                         </div>
                     </div>
 
@@ -735,7 +735,7 @@
                         </div>
                         <div class="form-group">
                             <label>תאריך עליה</label>
-                            <input type="date" name="spouse_aliyah_date">
+                            <input type="date" name="spouse_aliya_date">
                         </div>
                     </div>
 
@@ -1185,7 +1185,7 @@
 
             <div class="success-message" id="successMessage">
                 <h3>✅ הטופס נשלח בהצלחה!</h3>
-                <p>תודה על מילוי הטופס. קיבלת הודעת אישור ב-WhatsApp.</p>
+                <p>תודה על מילוי הטופס. הנתונים נשמרו ונוצר PDF בגוגל דרייב.</p>
             </div>
 
             <div class="error-message" id="errorMessage">
@@ -1476,6 +1476,12 @@
             data.additional_incomes = collectAdditionalIncomes(formData);
             data.changes = collectChanges(formData);
             data.submitted_at = new Date().toISOString();
+
+            // B5 fix: combine address parts into single 'address' field
+            const street = (formData.get('street') || '').trim();
+            const houseNum = (formData.get('house_number') || '').trim();
+            const city = (formData.get('city') || '').trim();
+            data.address = [street + (houseNum ? ' ' + houseNum : ''), city].filter(Boolean).join(', ');
 
             return data;
         }
