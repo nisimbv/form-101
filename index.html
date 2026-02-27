@@ -1,1460 +1,592 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>טופס 101 - כרטיס עובד (מלא)</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            direction: rtl;
-            font-size: 13px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #1e40af;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            color: #1e40af;
-            margin-bottom: 8px;
-        }
-
-        .header .subtitle {
-            font-size: 12px;
-            color: #666;
-            line-height: 1.6;
-        }
-
-        .header .year {
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 10px;
-            background: #f0f0f0;
-            padding: 8px;
-            display: inline-block;
-        }
-
-        .section {
-            margin-bottom: 25px;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 4px;
-            page-break-inside: avoid;
-        }
-
-        .section-title {
-            background: #1e40af;
-            color: white;
-            padding: 8px 12px;
-            margin: -15px -15px 15px -15px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 4px 4px 0 0;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 4px;
-            color: #333;
-        }
-
-        .form-group label.required::after {
-            content: " *";
-            color: red;
-        }
-
-        .form-group input[type="text"],
-        .form-group input[type="date"],
-        .form-group input[type="email"],
-        .form-group input[type="tel"],
-        .form-group input[type="number"],
-        .form-group select,
-        .form-group textarea {
-            padding: 6px 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            font-size: 13px;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #1e40af;
-            box-shadow: 0 0 3px rgba(30, 64, 175, 0.3);
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 8px;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .checkbox-item input[type="checkbox"],
-        .checkbox-item input[type="radio"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .checkbox-item label {
-            cursor: pointer;
-            font-weight: normal !important;
-            margin: 0 !important;
-        }
-
-        .info-box {
-            background: #f0f9ff;
-            border-right: 4px solid #1e40af;
-            padding: 12px;
-            margin-bottom: 15px;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .subsection {
-            margin-top: 15px;
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 3px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .subsection-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #1e40af;
-            font-size: 13px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-
-        table th,
-        table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: right;
-        }
-
-        table th {
-            background: #f3f4f6;
-            font-weight: bold;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .btn-add {
-            background: #10b981;
-            color: white;
-            margin-top: 8px;
-        }
-
-        .btn-add:hover {
-            background: #059669;
-        }
-
-        .btn-remove {
-            background: #ef4444;
-            color: white;
-            padding: 4px 8px;
-            font-size: 11px;
-        }
-
-        .btn-remove:hover {
-            background: #dc2626;
-        }
-
-        .btn-clear {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-submit {
-            background: #1e40af;
-            color: white;
-            font-size: 16px;
-            padding: 12px 30px;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .btn-submit:hover {
-            background: #1e3a8a;
-        }
-
-        .signature-canvas {
-            border: 2px solid #1e40af;
-            border-radius: 3px;
-            cursor: crosshair;
-            touch-action: none;
-            background: white;
-            display: block;
-            margin: 10px 0;
-        }
-
-        .explanations {
-            margin-top: 30px;
-            padding: 15px;
-            background: #fffbeb;
-            border: 1px solid #fbbf24;
-            border-radius: 4px;
-            font-size: 11px;
-            line-height: 1.6;
-        }
-
-        .explanations h4 {
-            color: #92400e;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .explanations ol {
-            margin-right: 20px;
-        }
-
-        .explanations li {
-            margin-bottom: 6px;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .loading.active {
-            display: block;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1e40af;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .success-message,
-        .error-message {
-            display: none;
-            padding: 15px;
-            border-radius: 4px;
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        .success-message {
-            background: #10b981;
-            color: white;
-        }
-
-        .error-message {
-            background: #ef4444;
-            color: white;
-        }
-
-        .success-message.active,
-        .error-message.active {
-            display: block;
-        }
-
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            .container {
-                box-shadow: none;
-            }
-            .btn {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .inline-fields {
-            display: inline-block;
-            width: auto;
-            margin-left: 10px;
-        }
-
-        .inline-fields input {
-            width: 60px;
-            display: inline-block;
-        }
-
-        .note {
-            font-size: 11px;
-            color: #666;
-            font-style: italic;
-            margin-top: 4px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>כרטיס עובד</h1>
-            <div class="subtitle">
-                ובקשה להקלה ולתיאום מס על ידי המעסיק<br>
-                לפי תקנות מס הכנסה (ניכוי ממשכורת ומשכר עבודה), התשנ"ג-1993
-            </div>
-            <div class="year">
-                שנת מס: <input type="number" id="taxYear" value="2026" style="width: 70px; text-align: center; border: 1px solid #ccc; padding: 4px;">
-            </div>
-        </div>
-
-        <div class="info-box">
-            טופס זה ימולא על-ידי כל עובד עם תחילת עבודתו, וכן בתחילת כל שנת מס (אא"כ המנהל אישר אחרת). 
-            הטופס מהווה אסמכתא למעסיק למתן הקלות במס ולעריכת תיאומי מס בחישוב משכורת העובד. 
-            אם חל שינוי בפרטים - יש להצהיר על כך תוך שבוע ימים.
-        </div>
-
-        <form id="form101">
-            <!-- א. פרטי המעסיק -->
-            <div class="section">
-                <div class="section-title">א. פרטי המעסיק (למילוי ע"י המעסיק)</div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>שם</label>
-                        <input type="text" name="employer_name">
-                    </div>
-                    <div class="form-group">
-                        <label>כתובת</label>
-                        <input type="text" name="employer_address">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>מספר תיק ניכויים</label>
-                        <input type="text" name="employer_tax_id" pattern="[0-9]{9}" maxlength="9">
-                    </div>
-                    <div class="form-group">
-                        <label>מספר טלפון</label>
-                        <input type="tel" name="employer_phone">
-                    </div>
-                </div>
-            </div>
-
-            <!-- ב. פרטי העובד/ת -->
-            <div class="section">
-                <div class="section-title">ב. פרטי העובד/ת</div>
-                <div class="note" style="margin-bottom: 10px;">
-                    יש לצרף צילום תעודת זהות כולל ספח. למי שאין מספר ת.ז - לצרף צילום דרכון ואישור שהייה בישראל.
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="required">שם משפחה</label>
-                        <input type="text" name="last_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="required">שם פרטי</label>
-                        <input type="text" name="first_name" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="required">מספר תעודת זהות (9 ספרות)</label>
-                        <input type="text" name="id_number" required pattern="[0-9]{9}" maxlength="9">
-                    </div>
-                    <div class="form-group">
-                        <label>מספר דרכון (למי שאין ת.ז)</label>
-                        <input type="text" name="passport_number">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="required">תאריך לידה</label>
-                        <input type="date" name="birth_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label>תאריך עליה</label>
-                        <input type="date" name="aliyah_date">
-                    </div>
-                </div>
-
-                <div class="subsection">
-                    <div class="subsection-title">כתובת פרטית</div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="required">רחוב/שכונה</label>
-                            <input type="text" name="street" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="required">מספר</label>
-                            <input type="text" name="house_number" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="required">עיר/ישוב</label>
-                            <input type="text" name="city" required>
-                        </div>
-                        <div class="form-group">
-                            <label>מיקוד</label>
-                            <input type="text" name="postal_code" pattern="[0-9]{7}" maxlength="7">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="required">טלפון נייד</label>
-                        <input type="tel" name="mobile_phone" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="required">כתובת דואר אלקטרוני</label>
-                        <input type="email" name="email" required>
-                    </div>
-                </div>
-
-                <div class="subsection">
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label>מין</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="radio" name="gender" value="זכר" id="gender_male" required>
-                                <label for="gender_male">זכר</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="gender" value="נקבה" id="gender_female">
-                                <label for="gender_female">נקבה</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label>מצב משפחתי</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="radio" name="marital_status" value="רווק/ה" id="marital_single" required>
-                                <label for="marital_single">רווק/ה</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="marital_status" value="נשוי/אה" id="marital_married">
-                                <label for="marital_married">נשוי/אה</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="marital_status" value="גרוש/ה" id="marital_divorced">
-                                <label for="marital_divorced">גרוש/ה</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="marital_status" value="אלמן/ה" id="marital_widowed">
-                                <label for="marital_widowed">אלמן/ה</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="marital_status" value="פרוד/ה" id="marital_separated">
-                                <label for="marital_separated">פרוד/ה (חובה לצרף אישור פ"ש)</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>תושב ישראל</label>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="radio" name="israeli_resident" value="כן" id="resident_yes">
-                                    <label for="resident_yes">כן</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="radio" name="israeli_resident" value="לא" id="resident_no">
-                                    <label for="resident_no">לא</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>חבר קיבוץ/מושב שיתופי</label>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="radio" name="kibbutz_member" value="כן" id="kibbutz_yes">
-                                    <label for="kibbutz_yes">כן, הכנסותיי ממעסיק זה מועברות לקיבוץ</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="radio" name="kibbutz_member" value="לא" id="kibbutz_no">
-                                    <label for="kibbutz_no">לא</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>חבר בקופת חולים</label>
-                        <select name="health_fund">
-                            <option value="">בחר קופת חולים</option>
-                            <option value="כללית">כללית</option>
-                            <option value="מכבי">מכבי</option>
-                            <option value="מאוחדת">מאוחדת</option>
-                            <option value="לאומית">לאומית</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ג. פרטים על ילדיי -->
-            <div class="section">
-                <div class="section-title">ג. פרטים על ילדיי שבשנת המס טרם מלאו להם 19 שנה</div>
-                <div class="note" style="margin-bottom: 10px;">
-                    סמן/י V ליד שם הילד: בטור 1 אם הילד נמצא בחזקתך, בטור 2 אם את/ה מקבל/ת בגינו קצבת ילדים מביטוח לאומי.
-                </div>
-
-                <div id="childrenContainer">
-                    <!-- Children will be added dynamically -->
-                </div>
-
-                <button type="button" class="btn btn-add" onclick="addChild()">➕ הוסף ילד/ה</button>
-            </div>
-
-            <!-- Next sections continue... -->
-            <!-- ד. פרטים על הכנסותיי ממעסיק זה -->
-            <div class="section">
-                <div class="section-title">ד. פרטים על הכנסותיי ממעסיק זה</div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label class="required">תאריך תחילת העבודה</label>
-                    <input type="date" name="start_date" required>
-                </div>
-
-                <div class="form-group">
-                    <label>אני מקבל/ת: (ראה הסברים מעבר לדף)</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="income_type_monthly" id="income_monthly">
-                            <label for="income_monthly">משכורת חודשית</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="income_type_additional" id="income_additional">
-                            <label for="income_additional">משכורת בעד משרה נוספת</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="income_type_partial" id="income_partial">
-                            <label for="income_partial">משכורת חלקית</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="income_type_daily" id="income_daily">
-                            <label for="income_daily">שכר עבודה (עובד יומי)</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="income_type_pension" id="income_pension">
-                            <label for="income_pension">קצבה</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="income_type_scholarship" id="income_scholarship">
-                            <label for="income_scholarship">מלגה</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ה. פרטים על הכנסות אחרות -->
-            <div class="section">
-                <div class="section-title">ה. פרטים על הכנסות אחרות</div>
-
-                <div class="form-group">
-                    <div class="checkbox-item">
-                        <input type="radio" name="has_other_income" value="לא" id="no_other_income" checked>
-                        <label for="no_other_income">אין לי הכנסות אחרות ממשכורת, מקצבה וממלגה</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="has_other_income" value="כן" id="yes_other_income">
-                        <label for="yes_other_income">יש לי הכנסות אחרות כמפורט להלן:</label>
-                    </div>
-                </div>
-
-                <div id="otherIncomeDetails" style="display: none; margin-top: 15px;">
-                    <div class="checkbox-group" style="flex-direction: column; gap: 8px;">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="other_income_monthly">
-                            <label>משכורת חודשית</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="other_income_additional">
-                            <label>משכורת בעד משרה נוספת</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="other_income_partial">
-                            <label>משכורת חלקית</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="other_income_daily">
-                            <label>שכר עבודה (עובד יומי)</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="other_income_pension">
-                            <label>קצבה</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="other_income_scholarship">
-                            <label>מלגה</label>
-                        </div>
-                    </div>
-
-                    <div class="subsection" style="margin-top: 15px;">
-                        <div class="form-group">
-                            <label>אם יש לך הכנסה אחרת - נא סמן/י:</label>
-                            <div class="checkbox-group" style="flex-direction: column; gap: 8px;">
-                                <div class="checkbox-item">
-                                    <input type="radio" name="other_income_credits" value="request">
-                                    <label>אבקש לקבל נקודות זיכוי ומדרגות מס כנגד הכנסתי זו (סעיף ד). איני מקבל/ת אותן בהכנסה אחרת</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="radio" name="other_income_credits" value="receive">
-                                    <label>אני מקבל/ת נקודות זיכוי ומדרגות מס בהכנסה אחרת ועל כן איני זכאי/ת להן כנגד הכנסה זו</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 10px;">
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="no_study_fund_other">
-                                <label>אין מפרישים עבורי לקרן השתלמות בגין הכנסתי האחרת</label>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="no_pension_other">
-                                <label>אין מפרישים עבורי לקצבה/לביטוח אובדן כושר עבודה/פיצויים בגין הכנסתי האחרת</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ו. פרטים על בן/בת הזוג -->
-            <div class="section">
-                <div class="section-title">ו. פרטים על בן/בת הזוג</div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="has_spouse" id="has_spouse">
-                        <label for="has_spouse">יש לי בן/בת זוג</label>
-                    </div>
-                </div>
-
-                <div id="spouseDetails" style="display: none;">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>שם משפחה</label>
-                            <input type="text" name="spouse_last_name">
-                        </div>
-                        <div class="form-group">
-                            <label>שם פרטי</label>
-                            <input type="text" name="spouse_first_name">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>מספר תעודת זהות (9 ספרות)</label>
-                            <input type="text" name="spouse_id" pattern="[0-9]{9}" maxlength="9">
-                        </div>
-                        <div class="form-group">
-                            <label>מספר דרכון (למי שאין ת.ז)</label>
-                            <input type="text" name="spouse_passport">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>תאריך לידה</label>
-                            <input type="date" name="spouse_birth_date">
-                        </div>
-                        <div class="form-group">
-                            <label>תאריך עליה</label>
-                            <input type="date" name="spouse_aliyah_date">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>האם יש לבן/בת הזוג הכנסה?</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="radio" name="spouse_has_income" value="לא" id="spouse_no_income">
-                                <label for="spouse_no_income">אין לבן/בת הזוג כל הכנסה</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="spouse_has_income" value="עבודה" id="spouse_income_work">
-                                <label for="spouse_income_work">יש לבן/בת הזוג הכנסה מ: עבודה/קצבה/עסק</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="radio" name="spouse_has_income" value="אחר" id="spouse_income_other">
-                                <label for="spouse_income_other">הכנסה אחרת</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ז. שינויים במהלך השנה -->
-            <div class="section">
-                <div class="section-title">ז. שינויים במהלך השנה</div>
-                <div class="note" style="margin-bottom: 10px;">
-                    כולל שינויים הקשורים לבקשה להקלה בחישוב המס
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>תאריך השינוי</th>
-                            <th>פרטי השינוי</th>
-                            <th>תאריך ההודעה</th>
-                            <th>חתימת העובד/ת</th>
-                        </tr>
-                    </thead>
-                    <tbody id="changesTable">
-                        <tr>
-                            <td><input type="date" name="change_1_date" style="width: 100%;"></td>
-                            <td><input type="text" name="change_1_details" style="width: 100%;"></td>
-                            <td><input type="date" name="change_1_notification" style="width: 100%;"></td>
-                            <td><input type="text" name="change_1_signature" style="width: 100%;"></td>
-                        </tr>
-                        <tr>
-                            <td><input type="date" name="change_2_date" style="width: 100%;"></td>
-                            <td><input type="text" name="change_2_details" style="width: 100%;"></td>
-                            <td><input type="date" name="change_2_notification" style="width: 100%;"></td>
-                            <td><input type="text" name="change_2_signature" style="width: 100%;"></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ח. בקשה להקלה - FULL VERSION -->
-            <div class="section">
-                <div class="section-title">ח. אני מבקש/ת פטור או זיכוי ממס מהסיבות הבאות</div>
-                <div class="note" style="margin-bottom: 15px;">
-                    סמן/י V בריבוע המתאים
-                </div>
-
-                <div class="checkbox-group" style="flex-direction: column; gap: 12px;">
-                    <!-- 1. תושב ישראל -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_1_resident" id="relief_1">
-                            <label for="relief_1"><strong>1.</strong> אני תושב/ת ישראל</label>
-                        </div>
-                    </div>
-
-                    <!-- 2. נכה/עיוור -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_2_disabled" id="relief_2">
-                            <label for="relief_2"><strong>2.</strong> אני נכה 100% / עיוור/ת לצמיתות</label>
-                        </div>
-                        <div class="note">מצורף אישור משרד הביטחון/האוצר/פקיד השומה/תעודת עיוור שהוצאה לאחר 1.1.94</div>
-                        <div class="note">אם לא סומן בחלק ה כי "אין לי הכנסות אחרות" - העובד יופנה לפקיד השומה</div>
-                        
-                        <div style="margin-right: 30px; margin-top: 8px;">
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="relief_2_1_allowance" id="relief_2_1">
-                                <label for="relief_2_1"><strong>2.1</strong> בנוסף, אני מקבל תגמול חודשי לפי חוק הנכים (תגמולים ושיקום) או לפי חוק התגמולים לנפגעי פעולות איבה</label>
-                            </div>
-                            <div class="note">יש לצרף אישור על קבלת תגמול זה</div>
-                        </div>
-                    </div>
-
-                    <!-- 3. ישוב מזכה -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_3_settlement" id="relief_3">
-                            <label for="relief_3"><strong>3.</strong> אני תושב/ת קבוע/ה בישוב מזכה מתאריך</label>
-                            <input type="date" name="relief_3_date" class="inline-fields">
-                        </div>
-                        <div class="note">אני ובני משפחתי מדרגה ראשונה מתגוררים ביישוב ואין לי "מרכז חיים" נוסף</div>
-                        <div class="note">מצורף אישור של הרשות ע"ג טופס 2131א</div>
-                    </div>
-
-                    <!-- 4. עולה חדש -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_4_new_immigrant" id="relief_4">
-                            <label for="relief_4"><strong>4.</strong> אני עולה חדש/ה מתאריך</label>
-                            <input type="date" name="relief_4_date" class="inline-fields">
-                        </div>
-                        <div class="note">חובה לצרף: תעודת עולה</div>
-                        <div class="form-group" style="margin-top: 8px;">
-                            <label style="font-weight: normal;">לא היתה לי הכנסה בישראל מתחילת שנת המס הנוכחית עד תאריך</label>
-                            <input type="date" name="relief_4_no_income_until" style="width: 150px; margin-top: 5px;">
-                        </div>
-                        <div class="note">מי שתקופת זכאותו אינה רצופה בשל שירות חובה בצה"ל, לימודים על תיכוניים או יציאה לחו"ל - יפנה לפקיד השומה</div>
-                    </div>
-
-                    <!-- 5. בן/בת זוג -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_5_spouse" id="relief_5">
-                            <label for="relief_5"><strong>5.</strong> בגין בן/בת זוגי המתגורר/ת עימי ואין לו/לה הכנסות בשנת המס</label>
-                        </div>
-                        <div class="note">רק אם העובד/ת או בן/בת הזוג הגיע/ה לגיל פרישה או שהוא/היא נכה או עיוור/ת</div>
-                    </div>
-
-                    <!-- 6. הורה במשפחה חד הורית -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_6_single_parent" id="relief_6">
-                            <label for="relief_6"><strong>6.</strong> אני הורה במשפחה חד הורית החי בנפרד</label>
-                        </div>
-                        <div class="note">ימולא רק ע"י הורה החי בנפרד ומבקש נקודות זיכוי עבור ילדיו הנמצאים בחזקתו ובגינם מקבל קצבת ילדים מביטוח לאומי ואינו מנהל משק בית משותף עם יחיד/ה אחר/ת</div>
-                    </div>
-
-                    <!-- 7. בגין ילדיי שבחזקתי -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_7_children_custody" id="relief_7">
-                            <label for="relief_7"><strong>7.</strong> בגין ילדיי שבחזקתי המפורטים בחלק ג</label>
-                        </div>
-                        <div class="note">ימולא רק ע"י הורה במשפחה חד הורית שמקבל את קצבת הילדים בגינם, או ע"י אשה נשואה או ע"י הורה יחיד</div>
-                        
-                        <div style="margin-right: 30px; margin-top: 10px;">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>מספר ילדים שנולדו בשנת המס</label>
-                                    <input type="number" name="relief_7_born" min="0" value="0" style="width: 80px;">
-                                </div>
-                                <div class="form-group">
-                                    <label>מספר ילדים שימלאו להם שנה אחת עד שנתיים</label>
-                                    <input type="number" name="relief_7_age_1_2" min="0" value="0" style="width: 80px;">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>מספר ילדים שימלאו להם 3 שנים</label>
-                                    <input type="number" name="relief_7_age_3" min="0" value="0" style="width: 80px;">
-                                </div>
-                                <div class="form-group">
-                                    <label>מספר ילדים שימלאו להם 4-5 שנים</label>
-                                    <input type="number" name="relief_7_age_4_5" min="0" value="0" style="width: 80px;">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>מספר ילדים שימלאו להם 6-17 שנים</label>
-                                    <input type="number" name="relief_7_age_6_17" min="0" value="0" style="width: 80px;">
-                                </div>
-                                <div class="form-group">
-                                    <label>מספר ילדים שימלאו להם 18 שנים</label>
-                                    <input type="number" name="relief_7_age_18" min="0" value="0" style="width: 80px;">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 8. בגין ילדיי (לא הורה חד הורי) -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_8_children_general" id="relief_8">
-                            <label for="relief_8"><strong>8.</strong> בגין ילדיי המפורטים בחלק ג</label>
-                        </div>
-                        <div class="note">ימולא ע"י הורה (למעט הורה אשר סימן בפסקה 7 לעיל), אשה לא נשואה שילדיה אינם בחזקתה וכן הורה יחיד</div>
-                        
-                        <div style="margin-right: 30px; margin-top: 10px;">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>מספר ילדים שנולדו בשנת המס</label>
-                                    <input type="number" name="relief_8_born" min="0" value="0" style="width: 80px;">
-                                </div>
-                                <div class="form-group">
-                                    <label>מספר ילדים גיל 1-2</label>
-                                    <input type="number" name="relief_8_age_1_2" min="0" value="0" style="width: 80px;">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>מספר ילדים גיל 3</label>
-                                    <input type="number" name="relief_8_age_3" min="0" value="0" style="width: 80px;">
-                                </div>
-                                <div class="form-group">
-                                    <label>מספר ילדים גיל 4-5</label>
-                                    <input type="number" name="relief_8_age_4_5" min="0" value="0" style="width: 80px;">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>מספר ילדים גיל 6-17</label>
-                                    <input type="number" name="relief_8_age_6_17" min="0" value="0" style="width: 80px;">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 9. הורה יחיד -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_9_sole_parent" id="relief_9">
-                            <label for="relief_9"><strong>9.</strong> אני הורה יחיד לילדיי שבחזקתי (המפורטים בחלק ג ובהתאם לסעיף 7 ו-8 לעיל)</label>
-                        </div>
-                    </div>
-
-                    <!-- 10. ילדים שאינם בחזקה -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_10_children_not_custody" id="relief_10">
-                            <label for="relief_10"><strong>10.</strong> בגין ילדיי שאינם בחזקתי המפורטים בחלק ג ואני משתתף/ת בכלכלתם</label>
-                        </div>
-                        <div class="note">ימולא ע"י הורה החי בנפרד, שאינו זכאי לנקודות זיכוי בגין ילדיו, אשר המציא פס"ד המחייב אותו בתשלום מזונות</div>
-                    </div>
-
-                    <!-- 11. ילדים עם מוגבלות -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_11_disabled_children" id="relief_11">
-                            <label for="relief_11"><strong>11.</strong> אני הורה ל-</label>
-                            <input type="number" name="relief_11_count" min="0" class="inline-fields" style="width: 50px;">
-                            <label>ילדים עם מוגבלות שטרם מלאו להם 19 שנים, בגינם אני מקבל/ת גמלת ילד נכה מביטוח לאומי</label>
-                        </div>
-                        <div class="note">מצורף אישור גמלת ילד נכה מביטוח לאומי לשנה נוכחית. בן זוגי אינו מקבל נקודות זיכוי אלה. לילדיי, בגינם אני מבקש את נקודות הזיכוי, אין הכנסות בשנה נוכחית</div>
-                    </div>
-
-                    <!-- 12. מזונות לבן/בת זוג לשעבר -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_12_alimony" id="relief_12">
-                            <label for="relief_12"><strong>12.</strong> בגין מזונות לבן/בת זוגי לשעבר</label>
-                        </div>
-                        <div class="note">ימולא ע"י מי שנישא בשנית. מצורף פסק דין</div>
-                    </div>
-
-                    <!-- 13. גיל 16-18 -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_13_age_16_18" id="relief_13">
-                            <label for="relief_13"><strong>13.</strong> מלאו לי או לבן/בת זוגי 16 שנים וטרם מלאו לי או לבן/בת זוגי 18 שנים בשנת המס</label>
-                        </div>
-                    </div>
-
-                    <!-- 14. חייל משוחרר -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_14_discharged_soldier" id="relief_14">
-                            <label for="relief_14"><strong>14.</strong> אני חייל/ת משוחרר/ת / שירתתי בשירות לאומי</label>
-                        </div>
-                        <div style="margin-right: 30px; margin-top: 8px;">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>תאריך תחילת השירות</label>
-                                    <input type="date" name="relief_14_start">
-                                </div>
-                                <div class="form-group">
-                                    <label>תאריך סיום השירות</label>
-                                    <input type="date" name="relief_14_end">
-                                </div>
-                            </div>
-                            <div class="note">מצורף צילום של תעודת שחרור/סיום שירות</div>
-                        </div>
-                    </div>
-
-                    <!-- 15. סיום לימודים -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_15_academic" id="relief_15">
-                            <label for="relief_15"><strong>15.</strong> בגין סיום לימודים לתואר אקדמי, סיום התמחות או סיום לימודי מקצוע</label>
-                        </div>
-                        <div class="note">מצורפת הצהרה בטופס 119</div>
-                    </div>
-
-                    <!-- 16. מילואים -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_16_reserve" id="relief_16">
-                            <label for="relief_16"><strong>16.</strong> שירתתי כלוחם/לוחמת מילואים סה"כ</label>
-                            <input type="number" name="relief_16_days" min="0" class="inline-fields" style="width: 60px;">
-                            <label>ימי מילואים בשנת המס הקודמת</label>
-                        </div>
-                        <div class="note">מצורף אישור מצה"ל על זכאות בעד שירות מילואים כלוחם</div>
-                    </div>
-
-                    <!-- 17. ללא הכנסה -->
-                    <div class="subsection">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="relief_17_no_income" id="relief_17">
-                            <label for="relief_17"><strong>17.</strong> לא היתה לי הכנסה מתחילת שנת המס הנוכחית עד לתחילת עבודתי אצל מעסיק זה</label>
-                        </div>
-                        <div class="note">הערות: 1. יש להמציא הוכחה כגון: אישור משטרת הגבולות בגין שהייה בחו"ל, אישור מחלה וכיו"ב. בהעדר הוכחה יש לפנות לפקיד השומה. 2. דמי לידה ודמי אבטלה הינם הכנסה חייבת.</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Next part continues... -->
-            <!-- ט. הכנסות נוספות ממשכורת - FULL TABLE -->
-            <div class="section">
-                <div class="section-title">ט. אני מבקש/ת תיאום מס (סמן/י V בריבוע המתאים)</div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="has_tax_coordination" id="has_tax_coordination">
-                        <label for="has_tax_coordination">יש לי הכנסות נוספות ממשכורת כמפורט להלן:</label>
-                    </div>
-                </div>
-
-                <div id="taxCoordinationDetails" style="display: none;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>מעסיק/משלם המשכורת<br>שם</th>
-                                <th>כתובת</th>
-                                <th>מספר תיק ניכויים</th>
-                                <th>סוג הכנסה<br>(עבודה/קצבה/מלגה/אחר)</th>
-                                <th>הכנסה חודשית<br>(לפי התלושים)</th>
-                                <th>המס שנוכה</th>
-                            </tr>
-                        </thead>
-                        <tbody id="additionalIncomesTable">
-                            <!-- Will be populated dynamically -->
-                        </tbody>
-                    </table>
-                    <button type="button" class="btn btn-add" onclick="addAdditionalIncome()">➕ הוסף מעסיק נוסף</button>
-
-                    <div class="subsection" style="margin-top: 15px;">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="tax_coordination_approved">
-                            <label>פקיד השומה אישר תיאום לפי אישור מצורף</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- י. הצהרה -->
-            <div class="section">
-                <div class="section-title">י. הצהרה</div>
-
-                <div class="info-box">
-                    <p style="line-height: 1.8; margin-bottom: 10px;">
-                        <strong>אני מצהיר/ה</strong> כי הפרטים שמסרתי בטופס זה הינם מלאים ונכונים.
-                    </p>
-                    <p style="line-height: 1.8; margin-bottom: 10px;">
-                        <strong>ידוע לי</strong> שהשמטה או מסירת פרטים לא נכונים הינה עבירה על פקודת מס הכנסה.
-                    </p>
-                    <p style="line-height: 1.8;">
-                        <strong>אני מתחייב/ת</strong> להודיע למעסיק על כל שינוי שיחול בפרטיי האישיים ובפרטים דלעיל 
-                        תוך שבוע ימים מתאריך השינוי.
-                    </p>
-                </div>
-
-                <div class="subsection">
-                    <div class="form-group">
-                        <label class="required">חתימה דיגיטלית</label>
-                        <p class="note" style="margin-bottom: 8px;">
-                            אנא חתום/י במסגרת הכחולה באמצעות העכבר או האצבע (במכשיר מגע)
-                        </p>
-                        <canvas id="signatureCanvas" class="signature-canvas" width="600" height="200"></canvas>
-                        <div style="margin-top: 8px;">
-                            <button type="button" class="btn btn-clear" onclick="clearSignature()">🗑️ נקה חתימה</button>
-                        </div>
-                    </div>
-
-                    <div class="form-row" style="margin-top: 15px;">
-                        <div class="form-group">
-                            <label>תאריך</label>
-                            <input type="date" name="declaration_date" id="declarationDate" readonly>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-top: 15px;">
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="confirm_declaration" id="confirm_declaration" required>
-                        <label for="confirm_declaration" style="font-weight: bold;">
-                            ✓ אני מאשר/ת שקראתי והבנתי את תוכן ההצהרה ומסכים/ה לכל האמור בה
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- דברי הסבר למילוי טופס 101 -->
-            <div class="explanations">
-                <h4>📖 דברי הסבר למילוי טופס 101</h4>
-                
-                <ol>
-                    <li><strong>(1) "עובד"</strong> - יחיד המקבל משכורת. <strong>"מעסיק"</strong> - אדם המשלם משכורת. <strong>"משכורת"</strong> - הכנסת עבודה, קיצבה, מענק עקב פרישה או מוות, מילגה וכיו"ב. <strong>"עבודה"</strong> - לרבות קבלת משכורת. <strong>"מלגה"</strong> - לרבות מענק, פרס או פטור מתשלום שניתן לסטודנט או לחוקר.</li>
-                    
-                    <li><strong>(2) משכורת חודש</strong> - משכורת בעד עבודה של לא פחות מ-18 יום בחודש.</li>
-                    
-                    <li><strong>(3) משכורת בעד משרה נוספת</strong> - משכורת בעד עבודה של יותר מ-5 שעות ביום, נוסף למשכורת ו/או בנוסף לקצבה החייבת במס ממקום אחר. העובד רשאי לבחור את מקום העבודה בו תחשב משכורתו כ"משכורת בעד משרה נוספת".</li>
-                    
-                    <li><strong>(4) משכורת חלקית</strong> - משכורת בעד עבודה של 5 שעות או פחות ליום או משכורת בעד עבודה במשך יותר מ-5 שעות ליום אך פחות מ-8 שעות בשבוע. ממשכורת חלקית ינוכה מס בשיעור מירבי אלא אם כן זו הכנסה יחידה שאז ינוכה מס לפי לוח הניכויים.</li>
-                    
-                    <li><strong>(5) שכר עבודה</strong> - משכורת בעד עבודה של פחות מ-18 יום בחודש אך לא פחות מ-8 שעות בשבוע. משכר עבודה ינוכה מס לפי לוח יומי אלא אם כן זו הכנסה יחידה שאז ינוכה מס לפי לוח הניכויים.</li>
-                    
-                    <li><strong>(6) קצבה</strong> - אין לדווח על קצבה פטורה מביטוח לאומי וקצבת שאירים שכולה פטורה.</li>
-                    
-                    <li><strong>(7)</strong> אם העובד לא מילא משבצת זו - המעסיק מנוע מלנכות מס לפי לוח הניכויים ויש לנכות מס מירבי לפי התקנות מכל תשלומי המעסיק.</li>
-                    
-                    <li><strong>(8)</strong> אם העובד מילא משבצת זו - המעסיק מנוע מלנכות מס לפי לוח הניכויים ויש לנכות מס מירבי לפי התקנות מכל תשלומי המעסיק.</li>
-                    
-                    <li><strong>(9)</strong> אם העובד לא מילא משבצת זו - על המעסיק לצרף למשכורת את סכומי ההפרשות לקרן השתלמות ולנכות מס לפי התקנות או לפעול לפי אישור תיאום מס מפקיד השומה.</li>
-                    
-                    <li><strong>(10)</strong> אם העובד לא מילא משבצת זו - על המעסיק לצרף למשכורת את סכומי ההפרשות לקצבה/לאובדן כושר עבודה ולנכות מס לפי התקנות או לפעול לפי אישור תיאום מס מפ"ש.</li>
-                    
-                    <li><strong>(11) הורה במשפחה חד הורית</strong> - הוא אחד מאלה: רווק, גרוש, אלמן, פרוד (עפ"י אישור פ"ש בלבד).</li>
-                    
-                    <li><strong>(12) הורה יחיד</strong> - הורה במשפחה חד הורית שהיה לו ילד שבשנת המס טרם מלאו לו 19 שנים ושההורה השני של הילד נפטר או שהילד רשום במרשם האוכלוסין בלא פרטי ההורה השני.</li>
-                    <li><strong>(13) ישוב מזכה</strong> - ישוב שחל עליו סעיף 11 לפקודה או סעיף 11 לחוק אס"ח, לפי העניין.</li>
-                    
-                    <li><strong>(14)</strong> עובד ימלא משבצת זו (2ב') רק בתנאי שמילא את המשבצת בסעיף 2א' ורק כך יהיה זכאי לתקרת הפטור הגבוהה.</li>
-                </ol>
-
-                <div style="margin-top: 15px; padding: 10px; background: white; border: 1px solid #fbbf24; border-radius: 4px;">
-                    <p style="font-weight: bold; margin-bottom: 5px;">⚠️ הערות חשובות:</p>
-                    <ul style="margin-right: 20px; line-height: 1.6;">
-                        <li>טופס זה מהווה אסמכתא למעסיק בלבד ואינו מהווה אישור תיאום מס</li>
-                        <li>לקבלת אישור תיאום מס יש לפנות לפקיד השומה</li>
-                        <li>יש לדווח על כל שינוי בפרטים תוך 7 ימים</li>
-                        <li>מסירת פרטים שגויים מהווה עבירה על פקודת מס הכנסה</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Loading & Messages -->
-            <div class="loading" id="loadingIndicator">
-                <div class="spinner"></div>
-                <p style="margin-top: 15px;">שולח טופס...</p>
-            </div>
-
-            <div class="success-message" id="successMessage">
-                <h3>✅ הטופס נשלח בהצלחה!</h3>
-                <p>תודה על מילוי הטופס. קיבלת הודעת אישור ב-WhatsApp.</p>
-            </div>
-
-            <div class="error-message" id="errorMessage">
-                <h3>❌ שגיאה בשליחת הטופס</h3>
-                <p id="errorText">אנא נסה שנית או פנה למחלקת משאבי אנוש.</p>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-submit" id="submitBtn">
-                📝 שלח טופס 101 - כרטיס עובד
-            </button>
-        </form>
-    </div>
-
-    <script>
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('declarationDate').valueAsDate = new Date();
-            initSignaturePad();
-            addChild(); // Add first child row
-            addAdditionalIncome(); // Add first additional income row
-            setupEventListeners();
-        });
-
-        // Event Listeners
-        function setupEventListeners() {
-            // Other income toggle
-            document.querySelectorAll('input[name="has_other_income"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    document.getElementById('otherIncomeDetails').style.display = 
-                        this.value === 'כן' ? 'block' : 'none';
-                });
-            });
-
-            // Spouse toggle
-            document.getElementById('has_spouse').addEventListener('change', function() {
-                document.getElementById('spouseDetails').style.display = 
-                    this.checked ? 'block' : 'none';
-            });
-
-            // Tax coordination toggle
-            document.getElementById('has_tax_coordination').addEventListener('change', function() {
-                document.getElementById('taxCoordinationDetails').style.display = 
-                    this.checked ? 'block' : 'none';
-            });
-
-            // Form submission
-            document.getElementById('form101').addEventListener('submit', handleSubmit);
-        }
-
-        // Signature Pad
-        let signaturePad = null;
-        let isDrawing = false;
-
-        function initSignaturePad() {
-            const canvas = document.getElementById('signatureCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-            
-            canvas.addEventListener('touchstart', handleTouch);
-            canvas.addEventListener('touchmove', handleTouch);
-            canvas.addEventListener('touchend', stopDrawing);
-            
-            signaturePad = ctx;
-        }
-
-        function startDrawing(e) {
-            isDrawing = true;
-            const canvas = document.getElementById('signatureCanvas');
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            signaturePad.beginPath();
-            signaturePad.moveTo(x, y);
-        }
-
-        function draw(e) {
-            if (!isDrawing) return;
-            e.preventDefault();
-            
-            const canvas = document.getElementById('signatureCanvas');
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            signaturePad.lineTo(x, y);
-            signaturePad.strokeStyle = '#000';
-            signaturePad.lineWidth = 2;
-            signaturePad.lineCap = 'round';
-            signaturePad.stroke();
-        }
-
-        function stopDrawing() {
-            isDrawing = false;
-        }
-
-        function handleTouch(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            document.getElementById('signatureCanvas').dispatchEvent(mouseEvent);
-        }
-
-        function clearSignature() {
-            const canvas = document.getElementById('signatureCanvas');
-            signaturePad.clearRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function isSignatureEmpty() {
-            const canvas = document.getElementById('signatureCanvas');
-            const blank = document.createElement('canvas');
-            blank.width = canvas.width;
-            blank.height = canvas.height;
-            return canvas.toDataURL() === blank.toDataURL();
-        }
-
-        // Children Management
-        let childCount = 0;
-
-        function addChild() {
-            childCount++;
-            const container = document.getElementById('childrenContainer');
-            
-            const childDiv = document.createElement('div');
-            childDiv.className = 'subsection';
-            childDiv.id = `child_${childCount}`;
-            childDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div class="subsection-title">ילד/ה ${childCount}</div>
-                    <button type="button" class="btn btn-remove" onclick="removeChild(${childCount})">🗑️ הסר</button>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>שם פרטי ומשפחה</label>
-                        <input type="text" name="child_${childCount}_name">
-                    </div>
-                    <div class="form-group">
-                        <label>מספר תעודת זהות</label>
-                        <input type="text" name="child_${childCount}_id" pattern="[0-9]{9}" maxlength="9">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>תאריך לידה</label>
-                        <input type="date" name="child_${childCount}_birth_date">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-weight: normal;">
-                            <input type="checkbox" name="child_${childCount}_in_custody" value="כן" style="width: auto; display: inline;">
-                            בחזקתי (טור 1)
-                        </label>
-                        <label style="font-weight: normal; margin-top: 5px;">
-                            <input type="checkbox" name="child_${childCount}_receives_allowance" value="כן" style="width: auto; display: inline;">
-                            מקבל/ת קצבת ילדים (טור 2)
-                        </label>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(childDiv);
-        }
-
-        function removeChild(id) {
-            const element = document.getElementById(`child_${id}`);
-            if (element) {
-                element.remove();
-            }
-        }
-
-        // Additional Incomes
-        let incomeCount = 0;
-
-        function addAdditionalIncome() {
-            incomeCount++;
-            const tbody = document.getElementById('additionalIncomesTable');
-            
-            const row = tbody.insertRow();
-            row.id = `income_${incomeCount}`;
-            row.innerHTML = `
-                <td><input type="text" name="add_income_${incomeCount}_employer" style="width: 100%;"></td>
-                <td><input type="text" name="add_income_${incomeCount}_address" style="width: 100%;"></td>
-                <td><input type="text" name="add_income_${incomeCount}_tax_id" style="width: 100%;"></td>
-                <td>
-                    <select name="add_income_${incomeCount}_type" style="width: 100%;">
-                        <option value="">בחר</option>
-                        <option value="עבודה">עבודה</option>
-                        <option value="קצבה">קצבה</option>
-                        <option value="מלגה">מלגה</option>
-                        <option value="אחר">אחר</option>
-                    </select>
-                </td>
-                <td><input type="number" name="add_income_${incomeCount}_amount" style="width: 100%;"></td>
-                <td><input type="number" name="add_income_${incomeCount}_tax" style="width: 100%;"></td>
-            `;
-        }
-
-        // Form Submission
-        async function handleSubmit(e) {
-            e.preventDefault();
-            
-            if (isSignatureEmpty()) {
-                alert('אנא חתום/י על הטופס לפני השליחה');
-                return;
-            }
-            
-            const canvas = document.getElementById('signatureCanvas');
-            const signatureData = canvas.toDataURL('image/png');
-            
-            const formData = new FormData(e.target);
-            const data = {};
-            
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
-            
-            data.signature = signatureData;
-            
-            // Collect children
-            data.children = [];
-            for (let i = 1; i <= childCount; i++) {
-                if (document.getElementById(`child_${i}`)) {
-                    data.children.push({
-                        name: formData.get(`child_${i}_name`),
-                        id: formData.get(`child_${i}_id`),
-                        birth_date: formData.get(`child_${i}_birth_date`),
-                        in_custody: formData.get(`child_${i}_in_custody`) === 'כן',
-                        receives_allowance: formData.get(`child_${i}_receives_allowance`) === 'כן'
-                    });
-                }
-            }
-            
-            document.getElementById('loadingIndicator').classList.add('active');
-            document.getElementById('submitBtn').disabled = true;
-            
-            try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbwnp-qHeIcDJiSK9szso4ONrCB07Is-OcJlmOK2MMgH4WCK5hZ-OSUoSMB3YVwtkdRT/exec', {
-                    method: 'POST',
-                    body: JSON.stringify(data),
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    redirect: 'follow'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    document.getElementById('successMessage').classList.add('active');
-                    document.getElementById('form101').reset();
-                    clearSignature();
-                } else {
-                    throw new Error(result.message || 'שגיאה בשליחת הטופס');
-                }
-            } catch (error) {
-                document.getElementById('errorMessage').classList.add('active');
-                document.getElementById('errorText').textContent = error.message;
-            } finally {
-                document.getElementById('loadingIndicator').classList.remove('active');
-                document.getElementById('submitBtn').disabled = false;
-            }
-        }
-    </script>
-</body>
-</html>
+/**
+ * ========================================
+ * טופס 101 - גרסה מתוקנת מלאה
+ * Backend ל-Google Apps Script
+ * ========================================
+ * שימוש:
+ * 1) צור Spreadsheet חדש
+ * 2) פתח Extensions > Apps Script
+ * 3) צור 2 קבצים:
+ *    - Code.gs  -> הדבק את הקובץ הזה
+ *    - PDFTemplate.html -> הדבק את תבנית ה-PDF
+ * 4) עדכן את CONFIG
+ * 5) Deploy > New deployment > Web app
+ * 6) Execute as: Me | Who has access: Anyone
+ */
+
+const CONFIG = {
+  SHEET_NAME: 'מעקב טופס 101',
+  MAIN_FOLDER: 'HR_101',
+  MAKE_WEBHOOK_URL: 'https://hook.eu1.make.com/97xrbln2td4492kq69ff8nwvka7ncseo',
+  HR_PHONE: '972524512669',
+  HR_EMAIL: 'hr@company.com',
+  TIMEZONE: 'Asia/Jerusalem'
+};
+
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      status: 'ok',
+      service: 'form-101',
+      version: '4.0'
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const output = ContentService.createTextOutput();
+  output.setMimeType(ContentService.MimeType.JSON);
+
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error('לא התקבל גוף בקשה.');
+    }
+
+    const raw = JSON.parse(e.postData.contents);
+    const data = normalizePayload(raw);
+
+    const rowNum = saveToSheet(data);
+    const pdfFile = createPDF(data);
+    updateSheetAfterPdf(rowNum, pdfFile, data);
+    sendToMake(data, pdfFile);
+
+    output.setContent(JSON.stringify({
+      success: true,
+      message: 'טופס 101 נשמר בהצלחה',
+      pdfUrl: pdfFile.getUrl(),
+      fileId: pdfFile.getId(),
+      fileName: pdfFile.getName()
+    }));
+  } catch (error) {
+    Logger.log('ERROR: ' + error.message);
+    Logger.log(error.stack || '');
+
+    output.setContent(JSON.stringify({
+      success: false,
+      message: error.message || 'שגיאה בעיבוד הטופס'
+    }));
+  }
+
+  return output;
+}
+
+function normalizePayload(raw) {
+  const data = raw || {};
+  data.taxYear = String(data.taxYear || new Date().getFullYear());
+  data.submitted_at = data.submitted_at || new Date().toISOString();
+
+  // Normalize arrays
+  data.children = Array.isArray(data.children) ? data.children : extractChildrenFromFlatFields(data);
+  data.additional_incomes = Array.isArray(data.additional_incomes)
+    ? data.additional_incomes
+    : extractAdditionalIncomesFromFlatFields(data);
+  data.changes = Array.isArray(data.changes) ? data.changes : extractChangesFromFlatFields(data);
+
+  // Normalize checkbox booleans
+  [
+    'income_type_monthly', 'income_type_additional', 'income_type_partial', 'income_type_daily', 'income_type_pension', 'income_type_scholarship',
+    'other_income_monthly', 'other_income_additional', 'other_income_partial', 'other_income_daily', 'other_income_pension', 'other_income_scholarship',
+    'no_study_fund_other', 'no_pension_other', 'has_spouse',
+    'relief_1_resident', 'relief_2_disabled', 'relief_2_1_allowance', 'relief_3_settlement',
+    'relief_4_new_immigrant', 'relief_5_spouse', 'relief_6_single_parent', 'relief_7_children_custody',
+    'relief_8_children_general', 'relief_9_sole_parent', 'relief_10_children_not_custody', 'relief_11_disabled_children',
+    'relief_12_alimony', 'relief_13_age_16_18', 'relief_14_discharged_soldier', 'relief_15_academic',
+    'relief_16_reserve', 'relief_17_no_income', 'has_tax_coordination', 'tax_coordination_approved',
+    'confirm_declaration'
+  ].forEach(function(key) {
+    data[key] = toBoolean(data[key]);
+  });
+
+  // Normalize textual radios / selects
+  [
+    'gender', 'marital_status', 'israeli_resident', 'kibbutz_member', 'health_fund',
+    'has_other_income', 'other_income_credits', 'spouse_has_income'
+  ].forEach(function(key) {
+    data[key] = safeString(data[key]);
+  });
+
+  return data;
+}
+
+function extractChildrenFromFlatFields(data) {
+  const results = [];
+  for (let i = 1; i <= 20; i++) {
+    const child = {
+      name: safeString(data['child_' + i + '_name']),
+      id: safeString(data['child_' + i + '_id']),
+      birth_date: safeString(data['child_' + i + '_birth_date']),
+      in_custody: toBoolean(data['child_' + i + '_in_custody']),
+      receives_allowance: toBoolean(data['child_' + i + '_receives_allowance'])
+    };
+    if (child.name || child.id || child.birth_date) results.push(child);
+  }
+  return results;
+}
+
+function extractAdditionalIncomesFromFlatFields(data) {
+  const results = [];
+  for (let i = 1; i <= 20; i++) {
+    const item = {
+      employer: safeString(data['add_income_' + i + '_employer']),
+      address: safeString(data['add_income_' + i + '_address']),
+      tax_id: safeString(data['add_income_' + i + '_tax_id']),
+      type: safeString(data['add_income_' + i + '_type']),
+      amount: safeString(data['add_income_' + i + '_amount']),
+      tax: safeString(data['add_income_' + i + '_tax'])
+    };
+    if (item.employer || item.address || item.tax_id || item.type || item.amount || item.tax) results.push(item);
+  }
+  return results;
+}
+
+function extractChangesFromFlatFields(data) {
+  const results = [];
+  for (let i = 1; i <= 10; i++) {
+    const item = {
+      date: safeString(data['change_' + i + '_date']),
+      details: safeString(data['change_' + i + '_details']),
+      notification_date: safeString(data['change_' + i + '_notification']),
+      signature: safeString(data['change_' + i + '_signature'])
+    };
+    if (item.date || item.details || item.notification_date || item.signature) results.push(item);
+  }
+  return results;
+}
+
+function saveToSheet(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('הסקריפט חייב להיות קשור ל-Google Spreadsheet פעיל.');
+
+  let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEET_NAME);
+    const headers = [
+      'submitted_at',
+      'tax_year',
+      'full_name',
+      'id_number',
+      'passport_number',
+      'mobile_phone',
+      'email',
+      'employer_name',
+      'employer_tax_id',
+      'start_date',
+      'marital_status',
+      'gender',
+      'israeli_resident',
+      'health_fund',
+      'children_count',
+      'additional_incomes_count',
+      'has_spouse',
+      'has_other_income',
+      'has_tax_coordination',
+      'declaration_date',
+      'pdf_url',
+      'drive_file_id',
+      'status',
+      'children_json',
+      'additional_incomes_json',
+      'changes_json',
+      'summary_json',
+      'full_json'
+    ];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#1e40af');
+    headerRange.setFontColor('white');
+    headerRange.setFontWeight('bold');
+    headerRange.setHorizontalAlignment('center');
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, headers.length);
+  }
+
+  const summary = buildSummary(data);
+  const row = [
+    formatTimestamp(data.submitted_at),
+    data.taxYear,
+    summary.full_name,
+    safeString(data.id_number),
+    safeString(data.passport_number),
+    safeString(data.mobile_phone),
+    safeString(data.email),
+    safeString(data.employer_name),
+    safeString(data.employer_tax_id),
+    safeString(data.start_date),
+    safeString(data.marital_status),
+    safeString(data.gender),
+    safeString(data.israeli_resident),
+    safeString(data.health_fund),
+    data.children.length,
+    data.additional_incomes.length,
+    data.has_spouse ? 'כן' : 'לא',
+    safeString(data.has_other_income),
+    data.has_tax_coordination ? 'כן' : 'לא',
+    safeString(data.declaration_date),
+    '',
+    '',
+    '⏳ מעבד...',
+    JSON.stringify(data.children),
+    JSON.stringify(data.additional_incomes),
+    JSON.stringify(data.changes),
+    JSON.stringify(summary),
+    JSON.stringify(data)
+  ];
+
+  sheet.appendRow(row);
+  return sheet.getLastRow();
+}
+
+function updateSheetAfterPdf(rowNum, pdfFile, data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME);
+  if (!sheet || !rowNum) return;
+
+  sheet.getRange(rowNum, 21).setValue(pdfFile.getUrl());
+  sheet.getRange(rowNum, 22).setValue(pdfFile.getId());
+  sheet.getRange(rowNum, 23).setValue('✅ הושלם');
+}
+
+function createPDF(data) {
+  const template = HtmlService.createTemplateFromFile('PDFTemplate');
+  template.data = data;
+  template.pdf = buildPdfViewModel(data);
+
+  const html = template.evaluate().getContent();
+  const tempFile = DriveApp.createFile('temp_101_' + new Date().getTime() + '.html', html, MimeType.HTML);
+
+  try {
+    const pdfBlob = tempFile.getAs(MimeType.PDF);
+    pdfBlob.setName(buildFileName(data));
+    const folder = getDestinationFolder(data);
+    return folder.createFile(pdfBlob);
+  } finally {
+    tempFile.setTrashed(true);
+  }
+}
+
+function buildFileName(data) {
+  const year = safeString(data.taxYear || new Date().getFullYear());
+  const lastName = sanitizeFilePart(data.last_name || 'ללא_שם_משפחה');
+  const firstName = sanitizeFilePart(data.first_name || 'ללא_שם_פרטי');
+  const id = sanitizeFilePart(data.id_number || 'ללא_תז');
+  return 'טופס_101_' + year + '_' + lastName + '_' + firstName + '_' + id + '.pdf';
+}
+
+function getDestinationFolder(data) {
+  const mainFolder = getOrMakeFolder(CONFIG.MAIN_FOLDER, null);
+  const yearFolder = getOrMakeFolder(String(data.taxYear || new Date().getFullYear()), mainFolder);
+  const employeeFolder = getOrMakeFolder(
+    sanitizeFilePart((data.last_name || '') + '_' + (data.first_name || '') + '_' + (data.id_number || '')),
+    yearFolder
+  );
+  return employeeFolder;
+}
+
+function getOrMakeFolder(name, parent) {
+  const iter = parent ? parent.getFoldersByName(name) : DriveApp.getFoldersByName(name);
+  if (iter.hasNext()) return iter.next();
+  return parent ? parent.createFolder(name) : DriveApp.createFolder(name);
+}
+
+function buildPdfViewModel(data) {
+  const incomeTypes = [];
+  if (data.income_type_monthly) incomeTypes.push('משכורת חודש');
+  if (data.income_type_additional) incomeTypes.push('משכורת בעד משרה נוספת');
+  if (data.income_type_partial) incomeTypes.push('משכורת חלקית');
+  if (data.income_type_daily) incomeTypes.push('שכר עבודה');
+  if (data.income_type_pension) incomeTypes.push('קצבה');
+  if (data.income_type_scholarship) incomeTypes.push('מלגה');
+
+  const otherIncomeTypes = [];
+  if (data.other_income_monthly) otherIncomeTypes.push('משכורת חודש');
+  if (data.other_income_additional) otherIncomeTypes.push('משרה נוספת');
+  if (data.other_income_partial) otherIncomeTypes.push('משכורת חלקית');
+  if (data.other_income_daily) otherIncomeTypes.push('שכר עבודה');
+  if (data.other_income_pension) otherIncomeTypes.push('קצבה');
+  if (data.other_income_scholarship) otherIncomeTypes.push('מלגה');
+
+  const reliefs = [];
+  if (data.relief_1_resident) reliefs.push('1. אני תושב/ת ישראל');
+  if (data.relief_2_disabled) reliefs.push('2. אני נכה / עיוור/ת');
+  if (data.relief_2_1_allowance) reliefs.push('2.1 קיימת זכאות לקצבה/תגמול בשל נכות');
+  if (data.relief_3_settlement) reliefs.push('3. תושב/ת יישוב מזכה מתאריך ' + fmtDate(data.relief_3_date));
+  if (data.relief_4_new_immigrant) reliefs.push('4. עולה חדש/ה או תושב/ת חוזר/ת - תאריך עלייה/חזרה: ' + fmtDate(data.relief_4_date));
+  if (data.relief_5_spouse) reliefs.push('5. בגין בן/בת זוג ללא הכנסה');
+  if (data.relief_6_single_parent) reliefs.push('6. הורה יחיד/ה');
+  if (data.relief_7_children_custody) {
+    reliefs.push('7. ילדים בחזקתי: נולדו השנה=' + nz(data.relief_7_born) +
+      ', גיל 1-2=' + nz(data.relief_7_age_1_2) +
+      ', גיל 3=' + nz(data.relief_7_age_3) +
+      ', גיל 4-5=' + nz(data.relief_7_age_4_5) +
+      ', גיל 6-17=' + nz(data.relief_7_age_6_17) +
+      ', גיל 18=' + nz(data.relief_7_age_18));
+  }
+  if (data.relief_8_children_general) {
+    reliefs.push('8. ילדים: נולדו השנה=' + nz(data.relief_8_born) +
+      ', גיל 1-2=' + nz(data.relief_8_age_1_2) +
+      ', גיל 3=' + nz(data.relief_8_age_3) +
+      ', גיל 4-5=' + nz(data.relief_8_age_4_5) +
+      ', גיל 6-17=' + nz(data.relief_8_age_6_17));
+  }
+  if (data.relief_9_sole_parent) reliefs.push('9. הורה במשפחה חד-הורית');
+  if (data.relief_10_children_not_custody) reliefs.push('10. ילדים שאינם בחזקתי');
+  if (data.relief_11_disabled_children) reliefs.push('11. ילדים נטולי יכולת: ' + nz(data.relief_11_count));
+  if (data.relief_12_alimony) reliefs.push('12. משלם/ת מזונות לבן/בת זוג לשעבר');
+  if (data.relief_13_age_16_18) reliefs.push('13. מלאו לי או לבן/בת זוגי 16 ועדיין לא 18');
+  if (data.relief_14_discharged_soldier) reliefs.push('14. חייל/ת משוחרר/ת / שירות לאומי: ' + fmtDate(data.relief_14_start) + ' עד ' + fmtDate(data.relief_14_end));
+  if (data.relief_15_academic) reliefs.push('15. סיום לימודים אקדמיים / מקצועיים');
+  if (data.relief_16_reserve) reliefs.push('16. משרת/ת מילואים פעיל/ה - מספר ימים: ' + nz(data.relief_16_days));
+  if (data.relief_17_no_income) reliefs.push('17. לא הייתה לי הכנסה מתחילת שנת המס ועד תחילת העבודה');
+
+  return {
+    generatedAt: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'dd/MM/yyyy HH:mm'),
+    taxYear: data.taxYear,
+    employeeName: ((data.first_name || '') + ' ' + (data.last_name || '')).trim(),
+    employerRows: [
+      ['שם מעסיק', nz(data.employer_name)],
+      ['כתובת', nz(data.employer_address)],
+      ['מספר תיק ניכויים', nz(data.employer_tax_id)],
+      ['טלפון מעסיק', nz(data.employer_phone)]
+    ],
+    employeeRows: [
+      ['שם משפחה', nz(data.last_name)],
+      ['שם פרטי', nz(data.first_name)],
+      ['תעודת זהות', nz(data.id_number)],
+      ['מספר דרכון', nz(data.passport_number)],
+      ['תאריך לידה', fmtDate(data.birth_date)],
+      ['תאריך עלייה', fmtDate(data.aliyah_date)],
+      ['רחוב', nz(data.street)],
+      ['מספר בית', nz(data.house_number)],
+      ['עיר', nz(data.city)],
+      ['מיקוד', nz(data.postal_code)],
+      ['טלפון נייד', nz(data.mobile_phone)],
+      ['אימייל', nz(data.email)],
+      ['מין', nz(data.gender)],
+      ['מצב משפחתי', nz(data.marital_status)],
+      ['תושב/ת ישראל', nz(data.israeli_resident)],
+      ['חבר/ת קיבוץ', nz(data.kibbutz_member)],
+      ['קופת חולים', nz(data.health_fund)]
+    ],
+    employmentRows: [
+      ['תאריך תחילת עבודה', fmtDate(data.start_date)],
+      ['סוגי הכנסה מהמעסיק הזה', incomeTypes.length ? incomeTypes.join(', ') : '—']
+    ],
+    otherIncomeRows: [
+      ['האם יש הכנסות נוספות', nz(data.has_other_income)],
+      ['סוגי הכנסות נוספות', otherIncomeTypes.length ? otherIncomeTypes.join(', ') : '—'],
+      ['יש זכאות לנקודות זיכוי בהכנסה האחרת', nz(data.other_income_credits)],
+      ['אין קרן השתלמות בהכנסה האחרת', yesNo(data.no_study_fund_other)],
+      ['אין הפרשות לפנסיה בהכנסה האחרת', yesNo(data.no_pension_other)]
+    ],
+    spouseRows: [
+      ['יש בן/בת זוג', yesNo(data.has_spouse)],
+      ['שם משפחה', nz(data.spouse_last_name)],
+      ['שם פרטי', nz(data.spouse_first_name)],
+      ['תעודת זהות', nz(data.spouse_id)],
+      ['מספר דרכון', nz(data.spouse_passport)],
+      ['תאריך לידה', fmtDate(data.spouse_birth_date)],
+      ['תאריך עלייה', fmtDate(data.spouse_aliyah_date)],
+      ['סוג הכנסה לבן/בת זוג', nz(data.spouse_has_income)]
+    ],
+    declarationRows: [
+      ['תאריך הצהרה', fmtDate(data.declaration_date)],
+      ['אישור ההצהרה', yesNo(data.confirm_declaration)],
+      ['תאריך הפקה', Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'dd/MM/yyyy HH:mm')]
+    ],
+    children: data.children || [],
+    additionalIncomes: data.additional_incomes || [],
+    changes: data.changes || [],
+    reliefs: reliefs,
+    showSpouse: data.has_spouse,
+    showOtherIncome: safeString(data.has_other_income) === 'כן',
+    showTaxCoordination: data.has_tax_coordination,
+    signature: safeString(data.signature)
+  };
+}
+
+function sendToMake(data, pdfFile) {
+  if (!CONFIG.MAKE_WEBHOOK_URL) return;
+
+  const payload = {
+    employee_name: ((data.first_name || '') + ' ' + (data.last_name || '')).trim(),
+    employee_phone: normalizePhone(data.mobile_phone),
+    employee_id: safeString(data.id_number),
+    employee_email: safeString(data.email),
+    employer_name: safeString(data.employer_name),
+    start_date: safeString(data.start_date),
+    marital_status: safeString(data.marital_status),
+    children_count: (data.children || []).length,
+    tax_year: data.taxYear,
+    pdf_url: pdfFile.getUrl(),
+    pdf_name: pdfFile.getName(),
+    hr_phone: CONFIG.HR_PHONE,
+    hr_email: CONFIG.HR_EMAIL,
+    message_to_employee: buildEmployeeMessage(data, pdfFile.getUrl()),
+    message_to_hr: buildHrMessage(data, pdfFile.getUrl()),
+    additional_incomes: data.additional_incomes || [],
+    changes: data.changes || [],
+    raw_data: data
+  };
+
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(CONFIG.MAKE_WEBHOOK_URL, options);
+    Logger.log('MAKE RESPONSE: ' + response.getResponseCode() + ' | ' + response.getContentText());
+  } catch (error) {
+    Logger.log('MAKE ERROR: ' + error.message);
+  }
+}
+
+function buildEmployeeMessage(data, pdfUrl) {
+  const firstName = safeString(data.first_name) || 'שלום';
+  return 'היי ' + firstName + ' ✅\n\n' +
+    'טופס 101 שלך התקבל בהצלחה.\n\n' +
+    'קישור לקובץ:\n' + pdfUrl + '\n\n' +
+    'תודה,\nמחלקת משאבי אנוש';
+}
+
+function buildHrMessage(data, pdfUrl) {
+  const fullName = ((data.first_name || '') + ' ' + (data.last_name || '')).trim();
+  return '📋 טופס 101 חדש\n\n' +
+    '👤 ' + fullName + '\n' +
+    '🆔 ת.ז: ' + nz(data.id_number) + '\n' +
+    '📱 טלפון: ' + nz(data.mobile_phone) + '\n' +
+    '📧 אימייל: ' + nz(data.email) + '\n' +
+    '🏢 מעסיק: ' + nz(data.employer_name) + '\n' +
+    '📅 תחילת עבודה: ' + fmtDate(data.start_date) + '\n' +
+    '👥 מצב משפחתי: ' + nz(data.marital_status) + '\n' +
+    '👶 ילדים: ' + ((data.children || []).length) + '\n' +
+    '📄 PDF: ' + pdfUrl;
+}
+
+function buildSummary(data) {
+  return {
+    full_name: ((data.first_name || '') + ' ' + (data.last_name || '')).trim(),
+    employee_id: safeString(data.id_number),
+    employer_name: safeString(data.employer_name),
+    tax_year: data.taxYear,
+    children_count: (data.children || []).length,
+    additional_incomes_count: (data.additional_incomes || []).length,
+    has_spouse: !!data.has_spouse,
+    has_other_income: safeString(data.has_other_income),
+    has_tax_coordination: !!data.has_tax_coordination
+  };
+}
+
+function toBoolean(value) {
+  return value === true || value === 'true' || value === 'on' || value === 'כן';
+}
+
+function yesNo(value) {
+  return toBoolean(value) ? 'כן' : 'לא';
+}
+
+function safeString(value) {
+  return value == null ? '' : String(value).trim();
+}
+
+function nz(value) {
+  const str = safeString(value);
+  return str || '—';
+}
+
+function fmtDate(value) {
+  const str = safeString(value);
+  if (!str) return '—';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const parts = str.split('-');
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+  return str;
+}
+
+function formatTimestamp(value) {
+  if (!value) return Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+  try {
+    const dt = new Date(value);
+    if (!isNaN(dt.getTime())) {
+      return Utilities.formatDate(dt, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+    }
+  } catch (e) {}
+  return String(value);
+}
+
+function sanitizeFilePart(value) {
+  return safeString(value).replace(/[^\u0590-\u05FFa-zA-Z0-9_-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'NA';
+}
+
+function normalizePhone(phone) {
+  let p = safeString(phone).replace(/[^\d]/g, '');
+  if (!p) return '';
+  if (p.indexOf('972') === 0) return p;
+  if (p.indexOf('0') === 0) return '972' + p.substring(1);
+  return '972' + p;
+}
+
+// ===== בדיקות =====
+
+function testManualSubmit() {
+  const sample = {
+    taxYear: '2026',
+    employer_name: 'חברת הדוגמה בע"מ',
+    employer_address: 'רחוב הרצל 1, תל אביב',
+    employer_tax_id: '123456789',
+    employer_phone: '03-5555555',
+    last_name: 'טסט',
+    first_name: 'יוסי',
+    id_number: '123456789',
+    passport_number: '',
+    birth_date: '1990-01-01',
+    aliyah_date: '',
+    street: 'הרצל',
+    house_number: '1',
+    city: 'תל אביב',
+    postal_code: '6100001',
+    mobile_phone: '0524512669',
+    email: 'test@example.com',
+    gender: 'זכר',
+    marital_status: 'נשוי/אה',
+    israeli_resident: 'כן',
+    kibbutz_member: 'לא',
+    health_fund: 'כללית',
+    start_date: '2026-03-01',
+    income_type_monthly: true,
+    has_other_income: 'כן',
+    other_income_monthly: true,
+    other_income_credits: 'כן',
+    no_study_fund_other: true,
+    no_pension_other: false,
+    has_spouse: true,
+    spouse_last_name: 'טסט',
+    spouse_first_name: 'שרה',
+    spouse_id: '987654321',
+    spouse_birth_date: '1991-02-02',
+    spouse_has_income: 'עבודה',
+    relief_1_resident: true,
+    relief_8_children_general: true,
+    relief_8_age_1_2: '1',
+    has_tax_coordination: true,
+    tax_coordination_approved: true,
+    declaration_date: '2026-02-27',
+    confirm_declaration: true,
+    signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HwAGgwJ/lM4tWQAAAABJRU5ErkJggg==',
+    children: [
+      { name: 'ילד דוגמה', id: '111111111', birth_date: '2024-01-01', in_custody: true, receives_allowance: true }
+    ],
+    additional_incomes: [
+      { employer: 'מעסיק נוסף', address: 'רחוב הדוגמה 2', tax_id: '222222222', type: 'עבודה', amount: '4500', tax: '400' }
+    ],
+    changes: [
+      { date: '2026-02-01', details: 'שינוי כתובת', notification_date: '2026-02-02', signature: 'יוסי' }
+    ]
+  };
+
+  const result = doPost({ postData: { contents: JSON.stringify(sample) } });
+  Logger.log(result.getContent());
+}
