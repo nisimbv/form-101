@@ -1,0 +1,13 @@
+# Pipeline state (contains fileIds from test runs)
+.pipeline_state.json
+
+# Claude internal
+.claude/
+
+# Python bytecode
+scripts/__pycache__/
+__pycache__/
+*.pyc
+
+# Reference PDF (binary, not source)
+searchable_20260225_092314.pdf
