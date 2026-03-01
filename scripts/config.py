@@ -67,15 +67,21 @@ EXPECTED_TEXT_FIELDS = [
 # ── Expected PDF marks: (name, page, left_mm, top_mm) ───────────────────────
 # These are ✓ checkmarks that must appear near the given CSS coordinates.
 # Only marks that should be checked given TEST_DATA above.
+# Positions verified from actual pdfplumber extraction (rowNum=20, @16 deploy).
 EXPECTED_MARKS = [
-    # Calibrated from actual PDF coordinate extraction (±1mm actual accuracy).
-    # income_monthly and relief_1 excluded — checkbox not triggered in headless test.
-    ("gender_male",     1,  34.5, 120.1),
-    ("marital_single",  1,  46.5, 120.1),
-    ("resident_yes",    1,  81.7, 120.1),
-    ("kibbutz_no",      1, 103.2, 125.9),
-    ("no_other_income", 1,  84.0, 177.0),
-    ("no_spouse",       1,  90.0, 257.7),
+    # Page 1 — Section B radios (RTL positions from real PDF calibration)
+    ("gender_male",         1, 187.1, 100.0),
+    ("marital_single",      1, 173.3,  99.5),
+    ("resident_yes",        1, 108.8, 100.3),
+    ("kibbutz_no",          1,  96.2, 104.2),
+    # Page 1 — Section D income type
+    ("income_type_monthly", 1,  84.7, 127.5),
+    # Page 1 — Section E no other income
+    ("no_other_income",     1,  84.2, 161.7),
+    # Page 1 — Section F no spouse
+    ("no_spouse",           1, 145.3, 254.3),
+    # Page 2 — Section H relief 1
+    ("relief_1_resident",   2, 181.0,  15.6),
 ]
 
 TOLERANCE_MM = 8.0   # ±mm around expected position

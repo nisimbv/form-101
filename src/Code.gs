@@ -42,57 +42,41 @@ const CONFIG = {
 };
 
 function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
-
-  if (action === 'verify')   return handleVerify_();
-  if (action === 'getPdf')   return handleGetPdf_(e.parameter.id || '');
-
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', service: 'form-101', version: '6.0' }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-/* ---------- Verification helpers (used by the automation pipeline) ---------- */
-
-function handleVerify_() {
+  const action = (e && e.parameter && e.parameter.action) || '';
   const out = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
-  try {
-    const ss = getSpreadsheet_();
-    if (!ss) throw new Error('Spreadsheet not found');
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
-    if (!sheet) throw new Error('Sheet not found');
 
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) {
-      out.setContent(JSON.stringify({ success: true, rows: 0, data: null }));
-      return out;
+  if (action === 'getPdf') {
+    try {
+      const id = e.parameter.id;
+      const file = DriveApp.getFileById(id);
+      const bytes = file.getBlob().getBytes();
+      const b64 = Utilities.base64Encode(bytes);
+      out.setContent(JSON.stringify({ success: true, name: file.getName(), data: b64 }));
+    } catch(err) {
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
     }
-
-    const ncols   = sheet.getLastColumn();
-    const headers = sheet.getRange(1, 1, 1, ncols).getValues()[0];
-    const values  = sheet.getRange(lastRow, 1, 1, ncols).getValues()[0];
-
-    const row = {};
-    headers.forEach(function(h, i) { row[String(h)] = values[i]; });
-
-    out.setContent(JSON.stringify({ success: true, rows: lastRow - 1, data: row }));
-  } catch (err) {
-    out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    return out;
   }
-  return out;
-}
 
-function handleGetPdf_(fileId) {
-  const out = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
-  try {
-    if (!fileId) throw new Error('fileId is required');
-    const file   = DriveApp.getFileById(fileId);
-    const bytes  = file.getBlob().getBytes();
-    const b64    = Utilities.base64Encode(bytes);
-    out.setContent(JSON.stringify({ success: true, name: file.getName(), data: b64 }));
-  } catch (err) {
-    out.setContent(JSON.stringify({ success: false, error: String(err) }));
+  if (action === 'verify') {
+    try {
+      const ss = CONFIG.SPREADSHEET_ID
+        ? SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID)
+        : SpreadsheetApp.getActiveSpreadsheet();
+      const sh = ss.getSheetByName(CONFIG.SHEET_NAME);
+      const lastRow = sh.getLastRow();
+      const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+      const values  = sh.getRange(lastRow, 1, 1, sh.getLastColumn()).getValues()[0];
+      const data = {};
+      headers.forEach(function(h, i) { data[h] = values[i]; });
+      out.setContent(JSON.stringify({ success: true, rows: lastRow - 1, data: data }));
+    } catch(err) {
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    }
+    return out;
   }
+
+  out.setContent(JSON.stringify({ status: 'ok', service: 'form-101', version: '6.0' }));
   return out;
 }
 
@@ -327,7 +311,9 @@ function saveToSheet(data) {
     'שם המעסיק','מספר תיק ניכויים','טלפון המעסיק','כתובת המעסיק','תאריך תחילת עבודה',
     'מין','מצב משפחתי','תושב ישראל','חבר קיבוץ/מושב שיתופי','קופת חולים',
     'מספר ילדים','מספר הכנסות נוספות','יש בן/בת זוג','יש הכנסות אחרות','יש תיאום מס',
-    'תאריך הצהרה','קישור PDF','מזהה קובץ ב-Drive','סטטוס',
+    'תאריך הצהרה',
+    'כתובת עובד','תאריך לידה','תאריך עלייה','סוג הכנסה ממעסיק','זכאויות - סיכום','פרטי בן/בת זוג',
+    'קישור PDF','מזהה קובץ ב-Drive','סטטוס',
     'ילדים (JSON)','הכנסות נוספות (JSON)','שינויים במהלך השנה (JSON)','סיכום','JSON מלא'
   ];
 
@@ -373,6 +359,12 @@ function saveToSheet(data) {
     data.has_other_income ? 'כן' : 'לא',
     data.has_tax_coordination ? 'כן' : 'לא',
     safeString(data.declaration_date),
+    safeString(data.address),
+    safeString(data.birth_date),
+    safeString(data.aliya_date),
+    safeString(data.summary_income_types),
+    safeString(data.summary_reliefs),
+    safeString(data.summary_spouse),
     '',
     '',
     'ממתין ל-PDF',
@@ -423,11 +415,10 @@ function updateSheetAfterPdf(rowNum, pdfFile) {
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   if (!sheet) return;
 
-  // עמודות 25-27 לפי headers למעלה (קישור PDF, ID, סטטוס)
-  // (שמור בהתאם לסדר headers)
-  sheet.getRange(rowNum, 25).setValue(pdfFile.getUrl());
-  sheet.getRange(rowNum, 26).setValue(pdfFile.getId());
-  sheet.getRange(rowNum, 27).setValue('✅ הושלם');
+  // עמודות 31-33 לפי headers (קישור PDF, מזהה קובץ, סטטוס)
+  sheet.getRange(rowNum, 31).setValue(pdfFile.getUrl());
+  sheet.getRange(rowNum, 32).setValue(pdfFile.getId());
+  sheet.getRange(rowNum, 33).setValue('✅ הושלם');
 }
 
 /* ==============================
@@ -437,9 +428,10 @@ function updateSheetAfterPdf(rowNum, pdfFile) {
 function createPDF(data) {
   // חובה: קובץ HTML בשם PDFTemplate בפרויקט
   const template = HtmlService.createTemplateFromFile('PDFTemplate');
+  const pdfViewModel = buildPdfViewModel(data);
   template.data = data;
-  template.pdf = buildPdfViewModel(data);
-  template.data = data;
+  template.pdf = pdfViewModel;
+  template.flags = pdfViewModel.flags;  // expose flags directly so template can access without nesting
 
   const html = template.evaluate().getContent();
 

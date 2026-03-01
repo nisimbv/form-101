@@ -46,24 +46,97 @@ def _ensure_server() -> None:
     print(f"  → Local HTTP server on port {_LOCAL_PORT}")
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── helpers ───────────────────────────────────────────────────────────────────
 
 def _fill(page: Page, selector: str, value: str) -> bool:
+    """Fill a text input — scroll into view first."""
     el = page.locator(selector)
     if el.count() == 0:
         print(f"    ⚠  field not found: {selector}")
         return False
+    el.first.scroll_into_view_if_needed()
     el.first.fill(value)
     return True
 
 
 def _check(page: Page, selector: str) -> bool:
+    """
+    Check a checkbox or radio.
+    1. Scroll into view so Playwright can interact.
+    2. Try native .check() — works for visible elements.
+    3. Fall back to JS if element is not actionable (hidden section, etc.).
+    """
     el = page.locator(selector)
     if el.count() == 0:
-        print(f"    ⚠  checkbox/radio not found: {selector}")
+        print(f"    ⚠  not found: {selector}")
         return False
-    el.first.check()
+
+    # Scroll the element into the viewport
+    try:
+        el.first.scroll_into_view_if_needed(timeout=3_000)
+    except Exception:
+        pass  # scroll failure is non-fatal; try check anyway
+
+    # Try native check (fast path for visible elements)
+    try:
+        el.first.check(timeout=3_000)
+        return True
+    except Exception:
+        pass
+
+    # JS fallback — works even if element is hidden or in a collapsed section
+    ok = page.evaluate("""
+        (sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return false;
+            if (!el.checked) {
+                el.checked = true;
+                el.dispatchEvent(new Event('change', {bubbles: true}));
+                el.dispatchEvent(new Event('input',  {bubbles: true}));
+                el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            }
+            return el.checked;
+        }
+    """, selector)
+
+    if ok:
+        print(f"    ✓ (via JS) {selector}")
+    else:
+        print(f"    ⚠  could not check: {selector}")
+    return bool(ok)
+
+
+def _select(page: Page, selector: str, value: str) -> bool:
+    """Select a <select> option — scroll into view first."""
+    el = page.locator(selector)
+    if el.count() == 0:
+        print(f"    ⚠  select not found: {selector}")
+        return False
+    el.first.scroll_into_view_if_needed()
+    page.select_option(selector, value)
     return True
+
+
+def _scroll_to_section(page: Page, selector: str) -> None:
+    """Scroll a section heading or landmark into view."""
+    el = page.locator(selector)
+    if el.count() > 0:
+        try:
+            el.first.scroll_into_view_if_needed(timeout=2_000)
+            page.wait_for_timeout(150)
+        except Exception:
+            pass
+
+
+def _verify_checked(page: Page, selectors: list[str]) -> None:
+    """Log which checkboxes are actually checked in the DOM before submit."""
+    for sel in selectors:
+        checked = page.evaluate(
+            "(sel) => { const e = document.querySelector(sel); return e ? e.checked : null; }",
+            sel,
+        )
+        icon = "✓" if checked else ("✗" if checked is False else "?")
+        print(f"    [{icon}] {sel}")
 
 
 def _draw_signature(page: Page) -> None:
@@ -81,7 +154,6 @@ def _draw_signature(page: Page) -> None:
             ctx.bezierCurveTo(55, 8,  95, 42, 120, 28);
             ctx.bezierCurveTo(140, 15, 155, 38, 170, 30);
             ctx.stroke();
-            // Verify it's not blank
             const blank = document.createElement('canvas');
             blank.width = canvas.width;
             blank.height = canvas.height;
@@ -99,13 +171,12 @@ def _draw_signature(page: Page) -> None:
 def run_form_test(headless: bool = True) -> dict | None:
     print("\n[TEST FORM]")
     _ensure_server()
-    captured: dict = {}
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless, slow_mo=80)
-        page = browser.new_page()
+        browser = p.chromium.launch(headless=headless, slow_mo=60)
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
 
-        # Capture alerts (signature-empty warning, etc.)
+        # Capture alerts
         alert_messages: list[str] = []
         def _on_dialog(dialog):
             alert_messages.append(dialog.message)
@@ -114,7 +185,7 @@ def run_form_test(headless: bool = True) -> dict | None:
 
         page.on("dialog", _on_dialog)
 
-        # Log JS errors and all relevant network activity
+        # Log JS errors and GAS network activity
         page.on("console", lambda m: print(f"  [JS {m.type}] {m.text}")
                  if m.type in ("error", "warning") else None)
         page.on("request", lambda req: print(f"  [→] {req.method} {req.url[:90]}")
@@ -125,51 +196,78 @@ def run_form_test(headless: bool = True) -> dict | None:
 
         print(f"  → Opening: {FORM_HTTP_URL}")
         page.goto(FORM_HTTP_URL, wait_until="networkidle", timeout=30_000)
-        # Bypass HTML5 required validation so JS handler always fires
+        # Bypass HTML5 required-field validation so our JS handler always fires
         page.evaluate("document.getElementById('form101').setAttribute('novalidate', '')")
 
-        # ── Employer section ─────────────────────────────────────────────────
+        # ── A. Employer ───────────────────────────────────────────────────────
+        print("  → Section A: employer")
         _fill(page, 'input[name="employer_name"]',   TEST_DATA["employer_name"])
         _fill(page, 'input[name="employer_tax_id"]', TEST_DATA["employer_tax_id"])
         _fill(page, 'input[name="employer_phone"]',  TEST_DATA["employer_phone"])
 
-        # ── Employee personal details ────────────────────────────────────────
-        _fill(page, 'input[name="last_name"]',  TEST_DATA["last_name"])
-        _fill(page, 'input[name="first_name"]', TEST_DATA["first_name"])
-        _fill(page, 'input[name="id_number"]',  TEST_DATA["id_number"])
+        # ── B. Employee personal details ──────────────────────────────────────
+        print("  → Section B: employee details")
+        _fill(page, 'input[name="last_name"]',    TEST_DATA["last_name"])
+        _fill(page, 'input[name="first_name"]',   TEST_DATA["first_name"])
+        _fill(page, 'input[name="id_number"]',    TEST_DATA["id_number"])
         _fill(page, 'input[name="mobile_phone"]', TEST_DATA["mobile_phone"])
-        _fill(page, 'input[name="email"]',      TEST_DATA["email"])
-        _fill(page, 'input[name="street"]',     TEST_DATA["street"])
+        _fill(page, 'input[name="email"]',        TEST_DATA["email"])
+        _fill(page, 'input[name="street"]',       TEST_DATA["street"])
         _fill(page, 'input[name="house_number"]', TEST_DATA["house_number"])
-        _fill(page, 'input[name="city"]',       TEST_DATA["city"])
-        _fill(page, 'input[name="start_date"]', TEST_DATA["start_date"])
+        _fill(page, 'input[name="city"]',         TEST_DATA["city"])
 
-        # ── Radios / selects ─────────────────────────────────────────────────
+        # Radios — scroll to each group first
         _check(page, f'input[name="gender"][value="{TEST_DATA["gender"]}"]')
         _check(page, f'input[name="marital_status"][value="{TEST_DATA["marital_status"]}"]')
         _check(page, f'input[name="israeli_resident"][value="{TEST_DATA["israeli_resident"]}"]')
         _check(page, f'input[name="kibbutz_member"][value="{TEST_DATA["kibbutz_member"]}"]')
-        page.select_option('select[name="health_fund"]', TEST_DATA["health_fund"])
+        _select(page, 'select[name="health_fund"]', TEST_DATA["health_fund"])
 
-        # ── Checkboxes ───────────────────────────────────────────────────────
-        _check(page, 'input[name="income_type_monthly"]')
-        _check(page, 'input[name="relief_1_resident"]')
+        # ── D. Income type ────────────────────────────────────────────────────
+        print("  → Section D: income type + start date")
+        _fill(page, 'input[name="start_date"]', TEST_DATA["start_date"])
+        _scroll_to_section(page, 'input[name="income_type_monthly"]')
+        for key in [k for k in TEST_DATA if k.startswith("income_type_") and TEST_DATA[k] is True]:
+            _check(page, f'input[name="{key}"]')
 
-        # "No other income" radio
+        # ── E. Other income ───────────────────────────────────────────────────
+        print("  → Section E: other income")
+        _scroll_to_section(page, 'input[name="has_other_income"]')
         _check(page, 'input[name="has_other_income"][value="לא"]')
 
-        # ── Signature ────────────────────────────────────────────────────────
+        # ── H. Relief checkboxes (page 2 of the HTML form) ───────────────────
+        print("  → Section H: relief checkboxes")
+        _scroll_to_section(page, 'input[name="relief_1_resident"]')
+        for key in [k for k in TEST_DATA if k.startswith("relief_") and TEST_DATA[k] is True]:
+            _check(page, f'input[name="{key}"]')
+
+        # ── Signature ─────────────────────────────────────────────────────────
+        print("  → Signature")
+        _scroll_to_section(page, '#signatureCanvas')
         _draw_signature(page)
 
-        # Declaration date is auto-set by JS; confirm checkbox
+        # ── Declaration ───────────────────────────────────────────────────────
+        print("  → Declaration")
+        _scroll_to_section(page, 'input[name="confirm_declaration"]')
         _check(page, 'input[name="confirm_declaration"]')
 
-        # ── Scroll submit button into view and click ─────────────────────────
+        # ── Pre-submit verification ───────────────────────────────────────────
+        print("  → Verifying checkbox state before submit:")
+        _verify_checked(page, [
+            'input[name="income_type_monthly"]',
+            'input[name="relief_1_resident"]',
+            'input[name="confirm_declaration"]',
+            'input[name="has_other_income"][value="לא"]',
+            f'input[name="gender"][value="{TEST_DATA["gender"]}"]',
+        ])
+
+
+        # ── Submit ────────────────────────────────────────────────────────────
         submit_btn = page.locator("#submitBtn")
         submit_btn.scroll_into_view_if_needed()
         page.wait_for_timeout(300)
 
-        # Verify signature not empty before submitting
+        # Verify signature not empty
         is_empty = page.evaluate("""
             () => {
                 const c = document.getElementById('signatureCanvas');
@@ -185,8 +283,6 @@ def run_form_test(headless: bool = True) -> dict | None:
 
         print("  → Submitting and waiting for GAS response …")
 
-        # Use expect_response to directly capture the GAS echo response,
-        # bypassing any UI rendering issues.
         try:
             with page.expect_response(
                 lambda r: "googleusercontent.com/macros/echo" in r.url

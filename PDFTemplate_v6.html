@@ -34,8 +34,9 @@
   function childAt(i) { return (data.children && data.children[i]) ? data.children[i] : {}; }
   function incAt(i) { return (data.additional_incomes && data.additional_incomes[i]) ? data.additional_incomes[i] : {}; }
   function chgAt(i) { return (data.changes && data.changes[i]) ? data.changes[i] : {}; }
-  var pdf = pdf || {};
-  var flags = pdf.flags || {};
+  // pdf   → available from template.pdf   (set via createPDF → template.pdf   = pdfViewModel)
+  // flags → available from template.flags (set via createPDF → template.flags = pdfViewModel.flags)
+  // Do NOT redeclare them with 'var' — JS var-hoisting would shadow the template globals with undefined.
 ?>
 
 <div class="page">
@@ -51,97 +52,98 @@
   <div class="field small" style="left:8mm; top:58.0mm; width:34mm; text-align:right;"><?= s(pdf.employer_address || data.employer_address) ?></div>
 
   <!-- ב. פרטי העובד -->
-  <div class="field" style="left:137mm; top:78.8mm; width:46mm; text-align:right;"><?= s(data.last_name) ?></div>
-  <div class="field" style="left:111mm; top:78.8mm; width:24mm; text-align:right;"><?= s(data.first_name) ?></div>
-  <div class="field" style="left:48mm; top:78.8mm; width:55mm; text-align:center;"><?= s(data.id_number || data.passport_number) ?></div>
-  <div class="field small" style="left:138mm; top:89.8mm; width:54mm; text-align:right;"><?= dmy(data.birth_date) ?></div>
-  <div class="field small" style="left:101mm; top:89.8mm; width:32mm; text-align:center;"><?= dmy(data.aliya_date) ?></div>
+  <div class="field" style="left:139mm; top:80.8mm; width:44mm; text-align:right;"><?= s(data.last_name) ?></div>
+  <div class="field" style="left:98mm;  top:80.8mm; width:41mm; text-align:right;"><?= s(data.first_name) ?></div>
+  <div class="field" style="left:183mm; top:80.8mm; width:24mm; text-align:center;"><?= s(data.id_number || data.passport_number) ?></div>
+  <div class="field small" style="left:58.6mm; top:80.8mm; width:36mm; text-align:center;"><?= dmy(data.birth_date) ?></div>
+  <div class="field small" style="left:26.4mm; top:80.8mm; width:32mm; text-align:center;"><?= dmy(data.aliya_date) ?></div>
 
-  <div class="field small" style="left:87mm; top:100.9mm; width:104mm; text-align:right;"><?= s(data.address) ?></div>
-  <div class="field small" style="left:48mm; top:100.9mm; width:33mm; text-align:center;"><?= s(data.postal_code) ?></div>
-  <div class="field small" style="left:89mm; top:112.1mm; width:102mm; text-align:right;"><?= s(data.email) ?></div>
-  <div class="field small" style="left:47mm; top:112.1mm; width:34mm; text-align:center;"><?= s(data.mobile_phone) ?></div>
+  <div class="field small" style="left:80mm;  top:89mm;   width:80mm;  text-align:right;"><?= s(data.address) ?></div>
+  <div class="field small" style="left:10mm; top:89mm;    width:32mm; text-align:center;"><?= s(data.postal_code) ?></div>
+  <div class="field small" style="left:163mm; top:108.3mm; width:35mm; text-align:right;"><?= s(data.email) ?></div>
+  <div class="field small" style="left:52.6mm; top:108.3mm; width:35mm; text-align:center;"><?= s(data.mobile_phone) ?></div>
 
   <!-- מין -->
-  <? if (eq(data.gender,'זכר')) { ?> <div class="mark" style="left:34.5mm; top:121.0mm;">✓</div> <? } ?>
-  <? if (eq(data.gender,'נקבה')) { ?> <div class="mark" style="left:34.5mm; top:126.8mm;">✓</div> <? } ?>
+  <? if (eq(data.gender,'זכר')) { ?> <div class="mark" style="left:187.1mm; top:100.9mm;">✓</div> <? } ?>
+  <? if (eq(data.gender,'נקבה')) { ?> <div class="mark" style="left:187.1mm; top:105.4mm;">✓</div> <? } ?>
 
   <!-- מצב משפחתי -->
-  <? if (eq(data.marital_status,'רווק/ה')) { ?> <div class="mark" style="left:46.5mm; top:121.0mm;">✓</div> <? } ?>
-  <? if (eq(data.marital_status,'נשוי/אה')) { ?> <div class="mark" style="left:58.7mm; top:121.0mm;">✓</div> <? } ?>
-  <? if (eq(data.marital_status,'גרוש/ה')) { ?> <div class="mark" style="left:46.5mm; top:126.8mm;">✓</div> <? } ?>
-  <? if (eq(data.marital_status,'אלמן/ה')) { ?> <div class="mark" style="left:58.7mm; top:126.8mm;">✓</div> <? } ?>
-  <? if (eq(data.marital_status,'פרוד/ה')) { ?> <div class="mark" style="left:70.5mm; top:126.8mm;">✓</div> <? } ?>
+  <? if (eq(data.marital_status,'רווק/ה')) { ?> <div class="mark" style="left:173.3mm; top:100.3mm;">✓</div> <? } ?>
+  <? if (eq(data.marital_status,'נשוי/אה')) { ?> <div class="mark" style="left:152.5mm; top:100.3mm;">✓</div> <? } ?>
+  <? if (eq(data.marital_status,'גרוש/ה')) { ?> <div class="mark" style="left:128.8mm; top:100.3mm;">✓</div> <? } ?>
+  <? if (eq(data.marital_status,'אלמן/ה')) { ?> <div class="mark" style="left:173.4mm; top:105.0mm;">✓</div> <? } ?>
+  <? if (eq(data.marital_status,'פרוד/ה')) { ?> <div class="mark" style="left:156.8mm; top:105.0mm;">✓</div> <? } ?>
 
   <!-- תושב ישראל -->
-  <? if (eq(data.israeli_resident,'כן')) { ?> <div class="mark" style="left:81.7mm; top:121.0mm;">✓</div> <? } ?>
-  <? if (eq(data.israeli_resident,'לא')) { ?> <div class="mark" style="left:81.7mm; top:126.8mm;">✓</div> <? } ?>
+  <? if (eq(data.israeli_resident,'כן')) { ?> <div class="mark" style="left:108.8mm; top:101.2mm;">✓</div> <? } ?>
+  <? if (eq(data.israeli_resident,'לא')) { ?> <div class="mark" style="left:96.2mm;  top:100.5mm;">✓</div> <? } ?>
 
   <!-- חבר קיבוץ -->
-  <? if (eq(data.kibbutz_member,'כן')) { ?> <div class="mark" style="left:103.2mm; top:121.0mm;">✓</div> <? } ?>
-  <? if (eq(data.kibbutz_member,'לא')) { ?> <div class="mark" style="left:103.2mm; top:126.8mm;">✓</div> <? } ?>
+  <? if (eq(data.kibbutz_member,'כן')) { ?> <div class="mark" style="left:88.4mm; top:100.5mm;">✓</div> <? } ?>
+  <? if (eq(data.kibbutz_member,'לא')) { ?> <div class="mark" style="left:96.2mm; top:105.1mm;">✓</div> <? } ?>
 
   <!-- קופת חולים -->
   <div class="field small" style="left:145mm; top:122.5mm; width:32mm; text-align:center;"><?= s(data.health_fund) ?></div>
 
   <!-- ד. תאריך תחילת עבודה -->
-  <div class="field small" style="left:13mm; top:136.0mm; width:24mm; text-align:center;"><?= dmy(data.start_date) ?></div>
+  <div class="field small" style="left:10mm; top:123mm;   width:30mm; text-align:center;"><?= dmy(data.start_date) ?></div>
 
   <!-- ד. סוגי הכנסה מהמעסיק -->
-  <? if (flags.income_type_monthly) { ?> <div class="mark" style="left:83mm; top:136.2mm;">✓</div> <? } ?>
-  <? if (flags.income_type_additional) { ?> <div class="mark" style="left:83mm; top:141.9mm;">✓</div> <? } ?>
-  <? if (flags.income_type_partial) { ?> <div class="mark" style="left:83mm; top:147.5mm;">✓</div> <? } ?>
-  <? if (flags.income_type_daily) { ?> <div class="mark" style="left:83mm; top:153.2mm;">✓</div> <? } ?>
-  <? if (flags.income_type_pension) { ?> <div class="mark" style="left:83mm; top:158.8mm;">✓</div> <? } ?>
-  <? if (flags.income_type_scholarship) { ?> <div class="mark" style="left:83mm; top:164.4mm;">✓</div> <? } ?>
+  <? if (flags.income_type_monthly) { ?> <div class="mark" style="left:84.7mm; top:128.4mm;">✓</div> <? } ?>
+  <? if (flags.income_type_additional) { ?> <div class="mark" style="left:84.7mm; top:132.6mm;">✓</div> <? } ?>
+  <? if (flags.income_type_partial) { ?> <div class="mark" style="left:84.7mm; top:136.8mm;">✓</div> <? } ?>
+  <? if (flags.income_type_daily) { ?> <div class="mark" style="left:84.7mm; top:141.2mm;">✓</div> <? } ?>
+  <? if (flags.income_type_pension) { ?> <div class="mark" style="left:84.7mm; top:145.3mm;">✓</div> <? } ?>
+  <? if (flags.income_type_scholarship) { ?> <div class="mark" style="left:84.7mm; top:149.5mm;">✓</div> <? } ?>
 
   <!-- ג. ילדים - עד 10 שורות -->
-  <? for (var i=0; i<10; i++) { var c = childAt(i); var y = 140.0 + (i*11.65); ?>
-    <div class="field tiny" style="left:145mm; top:<?= y ?>mm; width:28mm; text-align:right;"><?= s(c.name) ?></div>
-    <div class="field tiny" style="left:114mm; top:<?= y ?>mm; width:28mm; text-align:center;"><?= s(c.id) ?></div>
-    <div class="field tiny" style="left:95mm; top:<?= y ?>mm; width:16mm; text-align:center;"><?= dmy(c.birth_date) ?></div>
-    <? if (yes(c.in_custody)) { ?><div class="mark" style="left:176.6mm; top:<?= y-1.6 ?>mm;">✓</div><? } ?>
-    <? if (yes(c.receives_allowance)) { ?><div class="mark" style="left:183.5mm; top:<?= y-1.6 ?>mm;">✓</div><? } ?>
+  <? for (var i=0; i<6; i++) { var c = childAt(i); var y = 131.4 + (i*7.65); ?>
+    <div class="field tiny" style="left:170.7mm; top:<?= y ?>mm; width:13mm; text-align:right;"><?= s(c.name) ?></div>
+    <div class="field tiny" style="left:133.7mm; top:<?= y ?>mm; width:25mm; text-align:center;"><?= s(c.id) ?></div>
+    <div class="field tiny" style="left:99.8mm; top:<?= y ?>mm; width:34mm; text-align:center;"><?= dmy(c.birth_date) ?></div>
+    <? if (yes(c.in_custody)) { ?><div class="mark" style="left:186.9mm; top:<?= y-1.6 ?>mm;">✓</div><? } ?>
+    <? if (yes(c.receives_allowance)) { ?><div class="mark" style="left:184.4mm; top:<?= y-1.6 ?>mm;">✓</div><? } ?>
   <? } ?>
 
   <!-- ה. הכנסות אחרות -->
-  <? if (!data.has_other_income) { ?><div class="mark" style="left:84mm; top:177.7mm;">✓</div><? } ?>
-  <? if (data.has_other_income) { ?><div class="mark" style="left:84mm; top:183.6mm;">✓</div><? } ?>
-  <? if (flags.other_income_monthly) { ?><div class="mark" style="left:72mm; top:188.8mm;">✓</div><? } ?>
-  <? if (flags.other_income_additional) { ?><div class="mark" style="left:72mm; top:194.5mm;">✓</div><? } ?>
-  <? if (flags.other_income_partial) { ?><div class="mark" style="left:72mm; top:200.2mm;">✓</div><? } ?>
-  <? if (flags.other_income_daily) { ?><div class="mark" style="left:72mm; top:205.8mm;">✓</div><? } ?>
-  <? if (flags.other_income_pension) { ?><div class="mark" style="left:72mm; top:211.5mm;">✓</div><? } ?>
-  <? if (flags.other_income_scholarship) { ?><div class="mark" style="left:72mm; top:217.2mm;">✓</div><? } ?>
-  <? if (flags.no_study_fund_other) { ?><div class="mark" style="left:11.2mm; top:219.8mm;">✓</div><? } ?>
-  <? if (flags.no_pension_other) { ?><div class="mark" style="left:11.2mm; top:226.2mm;">✓</div><? } ?>
+  <? if (!data.has_other_income) { ?><div class="mark" style="left:84.2mm; top:162.4mm;">✓</div><? } ?>
+  <? if (data.has_other_income) { ?><div class="mark" style="left:84.2mm; top:171.0mm;">✓</div><? } ?>
+  <? if (flags.other_income_monthly) { ?><div class="mark" style="left:84.2mm; top:175.4mm;">✓</div><? } ?>
+  <? if (flags.other_income_daily) { ?><div class="mark" style="left:42.6mm; top:175.4mm;">✓</div><? } ?>
+  <? if (flags.other_income_additional) { ?><div class="mark" style="left:84.2mm; top:179.2mm;">✓</div><? } ?>
+  <? if (flags.other_income_pension) { ?><div class="mark" style="left:42.6mm; top:179.2mm;">✓</div><? } ?>
+  <? if (flags.other_income_partial) { ?><div class="mark" style="left:84.2mm; top:183.1mm;">✓</div><? } ?>
+  <? if (flags.other_income_scholarship) { ?><div class="mark" style="left:42.6mm; top:183.1mm;">✓</div><? } ?>
+  <? if (flags.no_study_fund_other) { ?><div class="mark" style="left:83.9mm; top:208.1mm;">✓</div><? } ?>
+  <? if (flags.no_pension_other) { ?><div class="mark" style="left:83.7mm; top:220.3mm;">✓</div><? } ?>
 
   <!-- טבלת הכנסות נוספות -->
-  <? for (var i=0; i<3; i++) { var inc = incAt(i); var y2 = 231.2 + (i*7.4); ?>
-    <div class="field tiny" style="left:56mm; top:<?= y2 ?>mm; width:20mm; text-align:center;"><?= s(inc.tax) ?></div>
-    <div class="field tiny" style="left:77mm; top:<?= y2 ?>mm; width:17mm; text-align:center;"><?= s(inc.amount) ?></div>
-    <div class="field tiny" style="left:95mm; top:<?= y2 ?>mm; width:25mm; text-align:center;"><?= s(inc.type) ?></div>
-    <div class="field tiny" style="left:123mm; top:<?= y2 ?>mm; width:30mm; text-align:center;"><?= s(inc.address) ?></div>
-    <div class="field tiny" style="left:155mm; top:<?= y2 ?>mm; width:36mm; text-align:right;"><?= s(inc.employer) ?></div>
+  <? for (var i=0; i<3; i++) { var inc = incAt(i); var y2 = 222.0 + (i*5.0); ?>
+    <div class="field tiny" style="left:9mm;   top:<?= y2 ?>mm; width:26mm; text-align:center;"><?= s(inc.tax) ?></div>
+    <div class="field tiny" style="left:35mm;  top:<?= y2 ?>mm; width:26mm; text-align:center;"><?= s(inc.amount) ?></div>
+    <div class="field tiny" style="left:61mm;  top:<?= y2 ?>mm; width:20mm; text-align:center;"><?= s(inc.type) ?></div>
+    <div class="field tiny" style="left:81mm;  top:<?= y2 ?>mm; width:28mm; text-align:center;"><?= s(inc.tax_id || '') ?></div>
+    <div class="field tiny" style="left:109mm; top:<?= y2 ?>mm; width:48mm; text-align:right;"><?= s(inc.employer) ?> <?= s(inc.address) ?></div>
   <? } ?>
 
   <!-- ו. בן/בת זוג -->
-  <? if (!data.has_spouse) { ?><div class="mark" style="left:90mm; top:258.6mm;">✓</div><? } ?>
-  <? if (data.has_spouse) { ?><div class="mark" style="left:118.6mm; top:258.6mm;">✓</div><? } ?>
-  <div class="field tiny" style="left:132mm; top:254.7mm; width:34mm; text-align:right;"><?= s(data.spouse_last_name) ?> <?= s(data.spouse_first_name) ?></div>
-  <div class="field tiny" style="left:168mm; top:254.7mm; width:24mm; text-align:center;"><?= s(data.spouse_id_number || data.spouse_passport_number) ?></div>
-  <div class="field tiny" style="left:132mm; top:262.0mm; width:29mm; text-align:center;"><?= dmy(data.spouse_birth_date) ?></div>
-  <div class="field tiny" style="left:100mm; top:262.0mm; width:24mm; text-align:center;"><?= dmy(data.spouse_aliya_date) ?></div>
-  <? if (eq(data.spouse_has_income,'לא')) { ?><div class="mark" style="left:61.5mm; top:258.7mm;">✓</div><? } ?>
-  <? if (eq(data.spouse_has_income,'עבודה')) { ?><div class="mark" style="left:44.5mm; top:258.7mm;">✓</div><? } ?>
-  <? if (eq(data.spouse_has_income,'אחר')) { ?><div class="mark" style="left:21.2mm; top:258.7mm;">✓</div><? } ?>
+  <? if (!data.has_spouse) { ?><div class="mark" style="left:145.3mm; top:255.1mm;">✓</div><? } ?>
+  <? if (data.has_spouse) { ?><div class="mark" style="left:100.4mm; top:255.2mm;">✓</div><? } ?>
+  <div class="field tiny" style="left:140mm; top:248mm; width:42mm; text-align:right;"><?= s(data.spouse_last_name) ?></div>
+  <div class="field tiny" style="left:103mm; top:248mm; width:37mm; text-align:right;"><?= s(data.spouse_first_name) ?></div>
+  <div class="field tiny" style="left:184mm; top:248mm; width:23mm; text-align:center;"><?= s(data.spouse_id_number || data.spouse_passport_number) ?></div>
+  <div class="field tiny" style="left:66mm;  top:248mm; width:34mm; text-align:center;"><?= dmy(data.spouse_birth_date) ?></div>
+  <div class="field tiny" style="left:33mm;  top:248mm; width:32mm; text-align:center;"><?= dmy(data.spouse_aliya_date) ?></div>
+  <? if (eq(data.spouse_has_income,'לא')) { ?><div class="mark" style="left:145.3mm; top:255.1mm;">✓</div><? } ?>
+  <? if (eq(data.spouse_has_income,'עבודה')) { ?><div class="mark" style="left:57.2mm;  top:255.2mm;">✓</div><? } ?>
+  <? if (eq(data.spouse_has_income,'אחר')) { ?><div class="mark" style="left:29.2mm;  top:255.2mm;">✓</div><? } ?>
 
   <!-- ז. שינויים במהלך השנה -->
-  <? for (var i=0; i<3; i++) { var ch = chgAt(i); var y3 = 283.2 + (i*4.0); ?>
-    <div class="field tiny" style="left:7mm; top:<?= y3 ?>mm; width:19mm; text-align:center;"><?= dmy(ch.notification_date) ?></div>
-    <div class="field tiny" style="left:29mm; top:<?= y3 ?>mm; width:87mm; text-align:right; white-space:normal;"><?= s(ch.details) ?></div>
-    <div class="field tiny" style="left:119mm; top:<?= y3 ?>mm; width:18mm; text-align:center;"><?= dmy(ch.date) ?></div>
-    <div class="field tiny" style="left:164mm; top:<?= y3 ?>mm; width:30mm; text-align:right;"><?= s(ch.signature) ?></div>
+  <? for (var i=0; i<3; i++) { var ch = chgAt(i); var y3 = 274.4 + (i*9.0); ?>
+    <div class="field tiny" style="left:10mm;  top:<?= y3 ?>mm; width:30mm;  text-align:right;"><?= s(ch.signature) ?></div>
+    <div class="field tiny" style="left:41mm;  top:<?= y3 ?>mm; width:25mm;  text-align:center;"><?= dmy(ch.notification_date) ?></div>
+    <div class="field tiny" style="left:67mm;  top:<?= y3 ?>mm; width:103mm; text-align:right; white-space:normal;"><?= s(ch.details) ?></div>
+    <div class="field tiny" style="left:170mm; top:<?= y3 ?>mm; width:21mm;  text-align:center;"><?= dmy(ch.date) ?></div>
   <? } ?>
 </div>
 
@@ -152,52 +154,51 @@
   <div class="field" style="left:103mm; top:7.2mm; width:36mm; text-align:center;"><?= s(data.id_number || data.passport_number) ?></div>
 
   <!-- ח. הקלות מס - סימוני V -->
-  <? if (flags.relief_1_resident) { ?><div class="mark" style="left:188.7mm; top:16.5mm;">✓</div><? } ?>
-  <? if (flags.relief_2_disabled) { ?><div class="mark" style="left:188.7mm; top:23.6mm;">✓</div><? } ?>
-  <? if (flags.relief_2_1_allowance) { ?><div class="mark" style="left:188.7mm; top:33.0mm;">✓</div><? } ?>
-  <? if (flags.relief_3_settlement) { ?><div class="mark" style="left:188.7mm; top:40.4mm;">✓</div><? } ?>
+  <? if (flags.relief_1_resident) { ?><div class="mark" style="left:181mm; top:16.5mm;">✓</div><? } ?>
+  <? if (flags.relief_2_disabled) { ?><div class="mark" style="left:181mm; top:21.7mm;">✓</div><? } ?>
+  <? if (flags.relief_2_1_allowance) { ?><div class="mark" style="left:181mm; top:29.4mm;">✓</div><? } ?>
+  <? if (flags.relief_3_settlement) { ?><div class="mark" style="left:181mm; top:35.3mm;">✓</div><? } ?>
   <div class="field tiny" style="left:98mm; top:42.2mm; width:28mm; text-align:center;"><?= dmy(pdf.relief_dates && pdf.relief_dates.relief_3_date) ?></div>
 
-  <? if (flags.relief_4_new_immigrant) { ?><div class="mark" style="left:188.7mm; top:49.8mm;">✓</div><? } ?>
+  <? if (flags.relief_4_new_immigrant) { ?><div class="mark" style="left:181mm; top:45.1mm;">✓</div><? } ?>
   <div class="field tiny" style="left:140mm; top:49.7mm; width:24mm; text-align:center;"><?= dmy(pdf.relief_dates && pdf.relief_dates.relief_4_date) ?></div>
   <div class="field tiny" style="left:98mm; top:57.4mm; width:24mm; text-align:center;"><?= dmy(pdf.relief_dates && pdf.relief_dates.relief_4_no_income_until) ?></div>
 
-  <? if (flags.relief_5_spouse) { ?><div class="mark" style="left:188.7mm; top:68.0mm;">✓</div><? } ?>
-  <? if (flags.relief_6_single_parent) { ?><div class="mark" style="left:188.7mm; top:78.0mm;">✓</div><? } ?>
-  <? if (flags.relief_7_children_custody) { ?><div class="mark" style="left:188.7mm; top:87.6mm;">✓</div><? } ?>
-  <? if (flags.relief_8_children_general) { ?><div class="mark" style="left:188.7mm; top:110.8mm;">✓</div><? } ?>
-  <? if (flags.relief_9_sole_parent) { ?><div class="mark" style="left:188.7mm; top:131.8mm;">✓</div><? } ?>
-  <? if (flags.relief_10_children_not_custody) { ?><div class="mark" style="left:188.7mm; top:139.4mm;">✓</div><? } ?>
-  <? if (flags.relief_11_disabled_children) { ?><div class="mark" style="left:188.7mm; top:148.7mm;">✓</div><? } ?>
-  <? if (flags.relief_12_alimony) { ?><div class="mark" style="left:188.7mm; top:159.5mm;">✓</div><? } ?>
-  <? if (flags.relief_13_age_16_18) { ?><div class="mark" style="left:188.7mm; top:167.6mm;">✓</div><? } ?>
-  <? if (flags.relief_14_discharged_soldier) { ?><div class="mark" style="left:188.7mm; top:175.2mm;">✓</div><? } ?>
+  <? if (flags.relief_5_spouse) { ?><div class="mark" style="left:181mm; top:59.3mm;">✓</div><? } ?>
+  <? if (flags.relief_6_single_parent) { ?><div class="mark" style="left:181mm; top:67.2mm;">✓</div><? } ?>
+  <? if (flags.relief_7_children_custody) { ?><div class="mark" style="left:181mm; top:75.3mm;">✓</div><? } ?>
+  <? if (flags.relief_8_children_general) { ?><div class="mark" style="left:181mm; top:95.9mm;">✓</div><? } ?>
+  <? if (flags.relief_9_sole_parent) { ?><div class="mark" style="left:181mm; top:113.4mm;">✓</div><? } ?>
+  <? if (flags.relief_10_children_not_custody) { ?><div class="mark" style="left:181mm; top:119.6mm;">✓</div><? } ?>
+  <? if (flags.relief_11_disabled_children) { ?><div class="mark" style="left:181mm; top:127.0mm;">✓</div><? } ?>
+  <? if (flags.relief_12_alimony) { ?><div class="mark" style="left:181mm; top:137.2mm;">✓</div><? } ?>
+  <? if (flags.relief_13_age_16_18) { ?><div class="mark" style="left:181mm; top:142.3mm;">✓</div><? } ?>
+  <? if (flags.relief_14_discharged_soldier) { ?><div class="mark" style="left:181mm; top:147.6mm;">✓</div><? } ?>
   <div class="field tiny" style="left:104mm; top:181.2mm; width:24mm; text-align:center;"><?= dmy(pdf.relief_dates && pdf.relief_dates.relief_14_start) ?></div>
   <div class="field tiny" style="left:72mm; top:181.2mm; width:24mm; text-align:center;"><?= dmy(pdf.relief_dates && pdf.relief_dates.relief_14_end) ?></div>
 
-  <? if (flags.relief_15_academic) { ?><div class="mark" style="left:188.7mm; top:191.0mm;">✓</div><? } ?>
-  <? if (flags.relief_16_reserve) { ?><div class="mark" style="left:188.7mm; top:198.8mm;">✓</div><? } ?>
+  <? if (flags.relief_15_academic) { ?><div class="mark" style="left:181mm; top:156.1mm;">✓</div><? } ?>
+  <? if (flags.relief_16_reserve) { ?><div class="mark" style="left:181mm; top:160.9mm;">✓</div><? } ?>
   <div class="field tiny" style="left:120mm; top:199.6mm; width:10mm; text-align:center;"><?= s(pdf.relief_dates && pdf.relief_dates.relief_16_days) ?></div>
-  <? if (flags.relief_17_no_income) { ?><div class="mark" style="left:188.7mm; top:206.4mm;">✓</div><? } ?>
+  <? if (flags.relief_17_no_income) { ?><div class="mark" style="left:181mm; top:165.5mm;">✓</div><? } ?>
 
   <!-- ט. תיאום מס -->
-  <? if (!data.has_tax_coordination) { ?><div class="mark" style="left:188.7mm; top:219.3mm;">✓</div><? } ?>
-  <? if (data.has_tax_coordination) { ?><div class="mark" style="left:188.7mm; top:231.0mm;">✓</div><? } ?>
-  <? for (var i=0; i<3; i++) { var inc2 = incAt(i); var yy = 240.7 + (i*7.1); ?>
-    <div class="field tiny" style="left:143mm; top:<?= yy ?>mm; width:40mm; text-align:right;"><?= s(inc2.employer) ?></div>
-    <div class="field tiny" style="left:104mm; top:<?= yy ?>mm; width:34mm; text-align:right;"><?= s(inc2.address) ?></div>
-    <div class="field tiny" style="left:76mm; top:<?= yy ?>mm; width:24mm; text-align:center;"><?= s(inc2.tax) ?></div>
-    <div class="field tiny" style="left:49mm; top:<?= yy ?>mm; width:24mm; text-align:center;"><?= s(inc2.type) ?></div>
-    <div class="field tiny" style="left:23mm; top:<?= yy ?>mm; width:22mm; text-align:center;"><?= s(inc2.amount) ?></div>
-    <div class="field tiny" style="left:3mm; top:<?= yy ?>mm; width:16mm; text-align:center;"><?= s(inc2.tax_amount || '') ?></div>
+  <? if (!data.has_tax_coordination) { ?><div class="mark" style="left:181.5mm; top:171.9mm;">✓</div><? } ?>
+  <? if (data.has_tax_coordination) { ?><div class="mark" style="left:181.5mm; top:182.1mm;">✓</div><? } ?>
+  <? for (var i=0; i<3; i++) { var inc2 = incAt(i); var yy = 195.1 + (i*5.05); ?>
+    <div class="field tiny" style="left:109mm; top:<?= yy ?>mm; width:48mm; text-align:right;"><?= s(inc2.employer) ?> <?= s(inc2.address) ?></div>
+    <div class="field tiny" style="left:81mm;  top:<?= yy ?>mm; width:27mm; text-align:center;"><?= s(inc2.tax) ?></div>
+    <div class="field tiny" style="left:61mm;  top:<?= yy ?>mm; width:20mm; text-align:center;"><?= s(inc2.type) ?></div>
+    <div class="field tiny" style="left:35mm;  top:<?= yy ?>mm; width:26mm; text-align:center;"><?= s(inc2.amount) ?></div>
+    <div class="field tiny" style="left:9mm;   top:<?= yy ?>mm; width:26mm; text-align:center;"><?= s(inc2.tax_amount || '') ?></div>
   <? } ?>
-  <? if (data.tax_coordination_approved) { ?><div class="mark" style="left:188.7mm; top:258.5mm;">✓</div><? } ?>
+  <? if (data.tax_coordination_approved) { ?><div class="mark" style="left:181.5mm; top:210.1mm;">✓</div><? } ?>
 
   <!-- י. הצהרה -->
-  <? if (data.confirm_declaration) { ?><div class="mark" style="left:188.7mm; top:267.8mm;">✓</div><? } ?>
-  <div class="field small" style="left:84mm; top:274.6mm; width:28mm; text-align:center;"><?= dmy(data.declaration_date) ?></div>
-  <div class="field small" style="left:126mm; top:274.6mm; width:36mm; text-align:center;"><?= s(data.last_name) ?> <?= s(data.first_name) ?></div>
-  <? if (data.signature) { ?><img class="sig" style="left:27mm; top:268.4mm;" src="<?= data.signature ?>" /><? } ?>
+  <? if (data.confirm_declaration) { ?><div class="mark" style="left:181mm; top:220mm;">✓</div><? } ?>
+  <div class="field small" style="left:55mm; top:231.2mm; width:40mm; text-align:center;"><?= dmy(data.declaration_date) ?></div>
+  <div class="field small" style="left:100mm; top:231.2mm; width:60mm; text-align:center;"><?= s(data.last_name) ?> <?= s(data.first_name) ?></div>
+  <? if (data.signature) { ?><img class="sig" style="left:9mm; top:235mm;" src="<?= data.signature ?>" /><? } ?>
 </div>
 </body>
 </html>
