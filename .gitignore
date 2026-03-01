@@ -9,5 +9,21 @@ scripts/__pycache__/
 __pycache__/
 *.pyc
 
-# Reference PDF (binary, not source)
+# Reference PDFs (binary, not source)
 searchable_20260225_092314.pdf
+form101_REAL_ORIGINAL_FILLED.pdf
+
+# Analysis images and debug outputs (scripts/)
+scripts/*.png
+scripts/*.jpg
+scripts/*.pdf
+scripts/pdf_analysis.json
+
+# Analysis/calibration scripts (one-time use)
+scripts/analyze_pdf.py
+scripts/annotate_bg.py
+scripts/annotate_form.py
+scripts/extract_bg.py
+scripts/generate_positions.py
+scripts/grid_check.py
+scripts/map_coords.py
