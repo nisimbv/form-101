@@ -155,6 +155,9 @@ function normalizePayload(raw) {
   // text radios/selects: keep as string
   ['gender','marital_status','israeli_resident','kibbutz_member','health_fund'].forEach(k => { if (k in data) data[k] = safeString(data[k]); });
 
+  // Normalize phone numbers to IL format (0XXXXXXXXX)
+  ['mobile_phone','employer_phone'].forEach(k => { if (k in data) data[k] = normalizePhone_(data[k]); });
+
   // Build summaries for PDF overlay (פשוט, כדי לעבוד מייד; אפשר לשדרג לסימון checkbox מדויק אחרי כיול)
   data.summary_income_types = buildIncomeTypesSummary(data);
   data.summary_other_income = buildOtherIncomeSummary(data);
@@ -377,6 +380,12 @@ function saveToSheet(data) {
     sheet.autoResizeColumns(1, headers.length);
   }
 
+  // Force text format on phone columns so leading zeros are never dropped by Sheets
+  // col 5 = טלפון המעסיק, col 16 = טלפון נייד
+  const maxRow = sheet.getMaxRows();
+  sheet.getRange(2, 5,  maxRow - 1, 1).setNumberFormat('@');
+  sheet.getRange(2, 16, maxRow - 1, 1).setNumberFormat('@');
+
     const row = [
     // מטא מערכת
     formatTimestamp_(data.submitted_at),      // 1:  תאריך הגשה
@@ -435,7 +444,16 @@ function saveToSheet(data) {
   ];
 
   sheet.appendRow(row);
-  return sheet.getLastRow();
+  const newRow = sheet.getLastRow();
+
+  // Re-write phone cells as explicit text so Sheets stores '0XXXXXXXXX', not integer
+  // (appendRow auto-coerces numeric-looking strings to numbers; setValue after the fact preserves string)
+  const phoneEmployer = row[4];   // col 5
+  const phoneMobile   = row[15];  // col 16
+  if (phoneEmployer) sheet.getRange(newRow, 5).setNumberFormat('@').setValue(String(phoneEmployer));
+  if (phoneMobile)   sheet.getRange(newRow, 16).setNumberFormat('@').setValue(String(phoneMobile));
+
+  return newRow;
 }
 
 
@@ -671,6 +689,21 @@ function sendToMake(data, pdfFile) {
 function safeString(v) {
   if (v === null || v === undefined) return '';
   return String(v).trim();
+}
+
+/**
+ * Normalize an Israeli phone number to 0XXXXXXXXX format (text string).
+ * - Strips spaces, dashes, dots, parentheses
+ * - Converts +972 / 972 country prefix to leading 0
+ * - Adds leading 0 if number is 9 digits (e.g. 500000001 → 0500000001)
+ */
+function normalizePhone_(v) {
+  let s = safeString(v).replace(/[\s\-\.\(\)]/g, '');
+  if (!s) return '';
+  if (s.startsWith('+972')) s = '0' + s.slice(4);
+  else if (s.startsWith('972') && s.length >= 12) s = '0' + s.slice(3);
+  else if (/^\d{9}$/.test(s)) s = '0' + s;
+  return s;
 }
 
 function toBoolean(v) {
