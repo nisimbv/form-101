@@ -210,11 +210,13 @@ def run_form_test(headless: bool = True) -> dict | None:
         _fill(page, 'input[name="last_name"]',    TEST_DATA["last_name"])
         _fill(page, 'input[name="first_name"]',   TEST_DATA["first_name"])
         _fill(page, 'input[name="id_number"]',    TEST_DATA["id_number"])
+        _fill(page, 'input[name="birth_date"]',   TEST_DATA["birth_date"])
         _fill(page, 'input[name="mobile_phone"]', TEST_DATA["mobile_phone"])
         _fill(page, 'input[name="email"]',        TEST_DATA["email"])
         _fill(page, 'input[name="street"]',       TEST_DATA["street"])
         _fill(page, 'input[name="house_number"]', TEST_DATA["house_number"])
         _fill(page, 'input[name="city"]',         TEST_DATA["city"])
+        _fill(page, 'input[name="postal_code"]',  TEST_DATA["postal_code"])
 
         # Radios — scroll to each group first
         _check(page, f'input[name="gender"][value="{TEST_DATA["gender"]}"]')

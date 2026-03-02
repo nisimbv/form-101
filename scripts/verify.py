@@ -10,7 +10,18 @@ from datetime import datetime, timezone, timedelta
 import requests
 import pdfplumber
 
-_ISRAEL_TZ = timezone(timedelta(hours=2))
+# Israel timezone with proper DST support (UTC+3 summer, UTC+2 winter)
+try:
+    from zoneinfo import ZoneInfo as _ZI
+    _ISRAEL_TZ = _ZI('Asia/Jerusalem')
+    def _to_israel(dt):
+        return dt.astimezone(_ISRAEL_TZ)
+except Exception:
+    # Approximate: Israel DST runs roughly March–October (UTC+3), rest UTC+2
+    _ISRAEL_TZ = None
+    def _to_israel(dt):
+        offset = 3 if 3 <= dt.month <= 10 else 2
+        return dt.astimezone(timezone(timedelta(hours=offset)))
 
 
 def _normalize_actual(actual: str, expected: str) -> str:
@@ -20,7 +31,7 @@ def _normalize_actual(actual: str, expected: str) -> str:
         if 'T' in actual:
             try:
                 dt = datetime.fromisoformat(actual.replace('Z', '+00:00'))
-                return dt.astimezone(_ISRAEL_TZ).strftime('%Y-%m-%d')
+                return _to_israel(dt).strftime('%Y-%m-%d')
             except Exception:
                 pass
     # Numeric → strip trailing .0
