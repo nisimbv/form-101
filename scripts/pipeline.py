@@ -3,12 +3,14 @@ Full automation pipeline:
   1. Deploy (clasp push + clasp deploy)
   2. Fill & submit form (Playwright)
   3. Verify Sheet + PDF (via GAS endpoints)
+  4. Verify Make webhook (skipped if MAKE_WEBHOOK_URL not configured)
 
 Usage:
     python -m scripts.pipeline                   # full pipeline
     python -m scripts.pipeline --no-deploy       # skip step 1
     python -m scripts.pipeline --verify-only     # step 3 only (reads state file)
     python -m scripts.pipeline --visible         # show browser window
+    python -m scripts.pipeline --no-make         # skip Make webhook step
 
 State between steps is stored in .pipeline_state.json
 """
@@ -59,6 +61,33 @@ def step_verify() -> bool:
     return sheet_ok and pdf_ok
 
 
+def step_verify_make() -> bool:
+    from scripts.config import MAKE_WEBHOOK_URL
+    print("\n[VERIFY MAKE]")
+
+    if not MAKE_WEBHOOK_URL or not MAKE_WEBHOOK_URL.strip():
+        print("  ⏭  MAKE_WEBHOOK_URL not configured in scripts/config.py — skipped")
+        print("     Set MAKE_WEBHOOK_URL to enable Make.com verification.")
+        return True  # not a failure — just unconfigured
+
+    import requests
+    try:
+        r = requests.post(
+            MAKE_WEBHOOK_URL,
+            json={"test": True, "source": "form101-pipeline", "message": "webhook reachability check"},
+            timeout=15,
+        )
+        if r.status_code in (200, 204):
+            print(f"  ✅ Make webhook reachable — status {r.status_code}")
+            return True
+        else:
+            print(f"  ❌ Make webhook returned status {r.status_code}: {r.text[:120]}")
+            return False
+    except Exception as e:
+        print(f"  ❌ Make webhook error: {e}")
+        return False
+
+
 # ── runner ────────────────────────────────────────────────────────────────────
 
 def _banner(title: str) -> None:
@@ -71,6 +100,7 @@ def main() -> None:
     args = sys.argv[1:]
     no_deploy    = "--no-deploy"    in args
     verify_only  = "--verify-only"  in args
+    no_make      = "--no-make"      in args
     headless     = "--visible"      not in args
 
     steps: list[tuple[str, callable]] = []
@@ -82,6 +112,9 @@ def main() -> None:
         steps.append(("Fill & submit form (Playwright)", lambda: step_test(headless)))
 
     steps.append(("Verify Sheet + PDF", step_verify))
+
+    if not no_make:
+        steps.append(("Verify Make webhook", step_verify_make))
 
     overall = True
     for name, func in steps:

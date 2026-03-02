@@ -224,7 +224,7 @@ function doPost(e) {
     updateSheetAfterPdf(rowNum, pdfFile);
 
     // 4) Webhook ל-Make (אם הוגדר)
-    sendToMake(data, pdfFile);
+    sendToMake(data, pdfFile, rowNum);
 
     output.setContent(JSON.stringify({
       success: true,
@@ -766,40 +766,160 @@ function buildPdfViewModel(data) {
    Make Webhook
 ============================== */
 
-function sendToMake(data, pdfFile) {
+function sendToMake(data, pdfFile, rowNum) {
   if (!CONFIG.MAKE_WEBHOOK_URL || !String(CONFIG.MAKE_WEBHOOK_URL).trim()) return;
 
   const payload = {
-    employee: {
-      first_name: safeString(data.first_name),
-      last_name: safeString(data.last_name),
-      id_number: safeString(data.id_number),
-      mobile_phone: safeString(data.mobile_phone),
-      email: safeString(data.email),
-    },
-    employer: {
-      employer_name: safeString(data.employer_name),
-      employer_tax_id: safeString(data.employer_tax_id),
-    },
+
+    // ── Meta ──────────────────────────────────────────────────────────────
     meta: {
-      submitted_at: safeString(data.submitted_at),
-      taxYear: safeString(data.taxYear),
+      form_version:   '101-v6',
+      submitted_at:   safeString(data.submitted_at),
+      tax_year:       safeString(data.taxYear),
+      sheet_row:      rowNum || null,
+      spreadsheet_id: CONFIG.SPREADSHEET_ID || null,
     },
+
+    // ── PDF / Drive ────────────────────────────────────────────────────────
     pdf: {
-      url: pdfFile ? pdfFile.getUrl() : '',
-      id: pdfFile ? pdfFile.getId() : '',
-      name: pdfFile ? pdfFile.getName() : '',
+      url:        pdfFile ? pdfFile.getUrl()  : '',
+      id:         pdfFile ? pdfFile.getId()   : '',
+      name:       pdfFile ? pdfFile.getName() : '',
+      drive_path: pdfFile
+        ? ('HR_101/' + safeString(data.taxYear) + '/' + safeString(data.employer_name))
+        : '',
     },
-    data, // JSON מלא
+
+    // ── Section A — Employer ──────────────────────────────────────────────
+    employer: {
+      name:       safeString(data.employer_name),
+      tax_id:     safeString(data.employer_tax_id),
+      phone:      safeString(data.employer_phone),
+      address:    safeString(data.employer_address),
+      start_date: safeString(data.start_date),
+    },
+
+    // ── Section B — Employee ──────────────────────────────────────────────
+    employee: {
+      last_name:        safeString(data.last_name),
+      first_name:       safeString(data.first_name),
+      full_name:        [safeString(data.last_name), safeString(data.first_name)].filter(Boolean).join(' '),
+      id_number:        safeString(data.id_number),
+      passport_number:  safeString(data.passport_number),
+      birth_date:       safeString(data.birth_date),
+      aliya_date:       safeString(data.aliya_date),
+      address:          safeString(data.address),
+      postal_code:      safeString(data.postal_code),
+      mobile_phone:     safeString(data.mobile_phone),
+      email:            safeString(data.email),
+      gender:           safeString(data.gender),
+      marital_status:   safeString(data.marital_status),
+      israeli_resident: safeString(data.israeli_resident),
+      kibbutz_member:   safeString(data.kibbutz_member),
+      health_fund:      safeString(data.health_fund),
+      signature:        safeString(data.signature),  // base64 data URL מהחתימה הדיגיטלית
+    },
+
+    // ── Section C — Children ──────────────────────────────────────────────
+    children: {
+      count: Array.isArray(data.children) ? data.children.length : 0,
+      items: Array.isArray(data.children) ? data.children : [],
+    },
+
+    // ── Section D — Income type ───────────────────────────────────────────
+    income: {
+      monthly:     !!data.income_type_monthly,
+      additional:  !!data.income_type_additional,
+      partial:     !!data.income_type_partial,
+      daily:       !!data.income_type_daily,
+      pension:     !!data.income_type_pension,
+      scholarship: !!data.income_type_scholarship,
+      summary:     safeString(data.summary_income_types),
+    },
+
+    // ── Section E — Other income ──────────────────────────────────────────
+    other_income: {
+      has_other_income:    !!data.has_other_income,
+      count:               Array.isArray(data.additional_incomes) ? data.additional_incomes.length : 0,
+      items:               Array.isArray(data.additional_incomes) ? data.additional_incomes : [],
+      no_study_fund_other: !!data.no_study_fund_other,
+      no_pension_other:    !!data.no_pension_other,
+      summary:             safeString(data.summary_other_income),
+    },
+
+    // ── Section F — Spouse ────────────────────────────────────────────────
+    spouse: {
+      has_spouse:      !!data.has_spouse,
+      last_name:       safeString(data.spouse_last_name),
+      first_name:      safeString(data.spouse_first_name),
+      id_number:       safeString(data.spouse_id_number),
+      passport_number: safeString(data.spouse_passport_number),
+      birth_date:      safeString(data.spouse_birth_date),
+      aliya_date:      safeString(data.spouse_aliya_date),
+      has_income:      safeString(data.spouse_has_income),
+      summary:         safeString(data.summary_spouse),
+    },
+
+    // ── Section H — Reliefs ───────────────────────────────────────────────
+    reliefs: {
+      relief_1_resident:              !!data.relief_1_resident,
+      relief_2_disabled:              !!data.relief_2_disabled,
+      relief_2_1_allowance:           !!data.relief_2_1_allowance,
+      relief_3_settlement:            !!data.relief_3_settlement,
+      relief_4_new_immigrant:         !!data.relief_4_new_immigrant,
+      relief_5_spouse:                !!data.relief_5_spouse,
+      relief_6_single_parent:         !!data.relief_6_single_parent,
+      relief_7_children_custody:      !!data.relief_7_children_custody,
+      relief_8_children_general:      !!data.relief_8_children_general,
+      relief_9_sole_parent:           !!data.relief_9_sole_parent,
+      relief_10_children_not_custody: !!data.relief_10_children_not_custody,
+      relief_11_disabled_children:    !!data.relief_11_disabled_children,
+      relief_12_alimony:              !!data.relief_12_alimony,
+      relief_13_age_16_18:            !!data.relief_13_age_16_18,
+      relief_14_discharged_soldier:   !!data.relief_14_discharged_soldier,
+      relief_15_academic:             !!data.relief_15_academic,
+      relief_16_reserve:              !!data.relief_16_reserve,
+      relief_17_no_income:            !!data.relief_17_no_income,
+      dates: {
+        relief_3_date:            safeString(data.relief_3_date),
+        relief_4_date:            safeString(data.relief_4_date),
+        relief_4_no_income_until: safeString(data.relief_4_no_income_until),
+        relief_14_start:          safeString(data.relief_14_start),
+        relief_14_end:            safeString(data.relief_14_end),
+        relief_16_days:           safeString(data.relief_16_days),
+      },
+      summary: safeString(data.summary_reliefs),
+    },
+
+    // ── Section T — Tax coordination ──────────────────────────────────────
+    tax_coordination: {
+      has_tax_coordination: !!data.has_tax_coordination,
+      approved:             !!data.tax_coordination_approved,
+      summary:              safeString(data.summary_tax_coordination),
+    },
+
+    // ── Section Z — Changes ───────────────────────────────────────────────
+    changes: {
+      count: Array.isArray(data.changes) ? data.changes.length : 0,
+      items: Array.isArray(data.changes) ? data.changes : [],
+    },
+
+    // ── Declaration ───────────────────────────────────────────────────────
+    declaration: {
+      date:      safeString(data.declaration_date),
+      confirmed: !!data.confirm_declaration,
+    },
+
   };
 
   try {
-    UrlFetchApp.fetch(CONFIG.MAKE_WEBHOOK_URL, {
+    const resp = UrlFetchApp.fetch(CONFIG.MAKE_WEBHOOK_URL, {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(payload),
       muteHttpExceptions: true,
     });
+    Logger.log('MAKE webhook: status=' + resp.getResponseCode());
   } catch (e) {
     Logger.log('MAKE webhook error: ' + e);
   }

@@ -10,6 +10,9 @@ APPS_SCRIPT_URL = f"https://script.google.com/macros/s/{PROD_DEPLOYMENT_ID}/exec
 SPREADSHEET_ID = "1VFSgcmNagnsAjXPsSDOgR9fadkjrbacK3beXCw2VG9Q"
 SPREADSHEET_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
 
+# Make.com webhook URL (leave empty to skip Make verification in pipeline)
+MAKE_WEBHOOK_URL = ""
+
 # ── Paths ────────────────────────────────────────────────────────────────────
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FORM_LOCAL_PATH = "file:///" + PROJECT_DIR.replace("\\", "/") + "/index_v6.html"
