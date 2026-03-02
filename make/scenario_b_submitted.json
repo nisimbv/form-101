@@ -1,0 +1,339 @@
+{
+  "name": "form101_submitted",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_ME_WEBHOOK_HOOK_ID_B",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "expect": [
+          {
+            "name": "meta",
+            "type": "collection",
+            "label": "Meta",
+            "spec": [
+              { "name": "form_version",   "type": "text",   "label": "Form Version" },
+              { "name": "submitted_at",   "type": "text",   "label": "Submitted At" },
+              { "name": "tax_year",       "type": "text",   "label": "Tax Year" },
+              { "name": "sheet_row",      "type": "number", "label": "Sheet Row" },
+              { "name": "spreadsheet_id", "type": "text",   "label": "Spreadsheet ID" }
+            ]
+          },
+          {
+            "name": "pdf",
+            "type": "collection",
+            "label": "PDF",
+            "spec": [
+              { "name": "url",        "type": "url",  "label": "URL" },
+              { "name": "id",         "type": "text", "label": "File ID" },
+              { "name": "name",       "type": "text", "label": "File Name" },
+              { "name": "drive_path", "type": "text", "label": "Drive Path" }
+            ]
+          },
+          {
+            "name": "employer",
+            "type": "collection",
+            "label": "Employer",
+            "spec": [
+              { "name": "name",       "type": "text", "label": "Name" },
+              { "name": "tax_id",     "type": "text", "label": "Tax ID" },
+              { "name": "phone",      "type": "text", "label": "Phone" },
+              { "name": "start_date", "type": "text", "label": "Start Date" }
+            ]
+          },
+          {
+            "name": "employee",
+            "type": "collection",
+            "label": "Employee",
+            "spec": [
+              { "name": "full_name",     "type": "text", "label": "Full Name" },
+              { "name": "first_name",    "type": "text", "label": "First Name" },
+              { "name": "last_name",     "type": "text", "label": "Last Name" },
+              { "name": "id_number",     "type": "text", "label": "ID Number" },
+              { "name": "mobile_phone",  "type": "text", "label": "Mobile Phone" },
+              { "name": "email",         "type": "email","label": "Email" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+      "mapper": {
+        "url": "https://script.google.com/macros/s/REPLACE_ME_GAS_DEPLOYMENT_ID/exec",
+        "serializeUrl": false,
+        "method": "get",
+        "headers": [],
+        "qs": [
+          { "name": "action", "value": "validatePdf" },
+          { "name": "fileId", "value": "{{1.pdf.id}}" }
+        ],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "timeout": 60,
+        "shareCookies": false
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "restore": { "expect": { "method": { "label": "GET" } } }
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 600, "y": 0 }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 4,
+              "module": "builtin:SetVariables",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "variables": [
+                  {
+                    "name": "wa_employee",
+                    "value": "972{{substring(1.employee.mobile_phone; 1)}}"
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": { "x": 900, "y": -150 }
+              }
+            },
+            {
+              "id": 5,
+              "module": "whatsapp-business:ActionCreateAMessage",
+              "version": 1,
+              "parameters": {
+                "connectionId": "REPLACE_ME_WA_CONNECTION_ID"
+              },
+              "mapper": {
+                "to": "{{4.wa_employee}}",
+                "type": "template",
+                "template": {
+                  "name": "form_101_confirmation",
+                  "language": { "code": "he" },
+                  "components": [
+                    {
+                      "type": "body",
+                      "parameters": [
+                        { "type": "text", "text": "{{1.employee.full_name}}" },
+                        { "type": "text", "text": "{{1.meta.tax_year}}" },
+                        { "type": "text", "text": "{{1.pdf.url}}" },
+                        { "type": "text", "text": "{{1.employer.name}}" }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "metadata": {
+                "designer": { "x": 1200, "y": -150 },
+                "restore": {
+                  "connectionId": { "label": "REPLACE_ME_WA_CONNECTION_LABEL" }
+                }
+              }
+            },
+            {
+              "id": 6,
+              "module": "builtin:SetVariables",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "variables": [
+                  {
+                    "name": "wa_hr",
+                    "value": "972{{substring(\"REPLACE_ME_HR_PHONE\"; 1)}}"
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": { "x": 1500, "y": -150 },
+                "restore": {}
+              }
+            },
+            {
+              "id": 7,
+              "module": "whatsapp-business:ActionCreateAMessage",
+              "version": 1,
+              "parameters": {
+                "connectionId": "REPLACE_ME_WA_CONNECTION_ID"
+              },
+              "mapper": {
+                "to": "{{6.wa_hr}}",
+                "type": "template",
+                "template": {
+                  "name": "form_101_hr_notify",
+                  "language": { "code": "he" },
+                  "components": [
+                    {
+                      "type": "body",
+                      "parameters": [
+                        { "type": "text", "text": "{{1.employee.full_name}}" },
+                        { "type": "text", "text": "{{1.employee.id_number}}" },
+                        { "type": "text", "text": "{{1.meta.tax_year}}" },
+                        { "type": "text", "text": "{{1.pdf.url}}" }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "metadata": {
+                "designer": { "x": 1800, "y": -150 },
+                "restore": {
+                  "connectionId": { "label": "REPLACE_ME_WA_CONNECTION_LABEL" }
+                }
+              }
+            },
+            {
+              "id": 8,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+              "mapper": {
+                "url": "https://script.google.com/macros/s/REPLACE_ME_GAS_DEPLOYMENT_ID/exec",
+                "serializeUrl": false,
+                "method": "get",
+                "headers": [],
+                "qs": [
+                  { "name": "action",  "value": "confirmSubmission" },
+                  { "name": "rowNum",  "value": "{{1.meta.sheet_row}}" },
+                  { "name": "status",  "value": "✅ אושר על ידי HR" },
+                  { "name": "source",  "value": "make" }
+                ],
+                "bodyType": "raw",
+                "parseResponse": true,
+                "timeout": 30,
+                "shareCookies": false
+              },
+              "metadata": {
+                "designer": { "x": 2100, "y": -150 },
+                "restore": { "expect": { "method": { "label": "GET" } } }
+              }
+            }
+          ],
+          "metadata": {
+            "designer": { "x": 600, "y": -150 },
+            "filter": {
+              "name": "QA passed or skipped",
+              "conditions": [
+                [
+                  {
+                    "a": "{{2.passed}}",
+                    "b": "true",
+                    "o": "text:equal",
+                    "c": 0
+                  }
+                ],
+                [
+                  {
+                    "a": "{{2.skipped}}",
+                    "b": "true",
+                    "o": "text:equal",
+                    "c": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "flow": [
+            {
+              "id": 9,
+              "module": "email:ActionSendAnEmail",
+              "version": 1,
+              "parameters": {
+                "account": "REPLACE_ME_EMAIL_CONNECTION_ID"
+              },
+              "mapper": {
+                "to": "REPLACE_ME_HR_EMAIL",
+                "subject": "⚠ טופס 101 — בעיית איכות PDF (quality={{2.quality}})",
+                "html": "<p>ה-PDF שנוצר עבור <strong>{{1.employee.full_name}}</strong> (ת\"ז {{1.employee.id_number}}) לשנת {{1.meta.tax_year}} נכשל בבדיקת האיכות.</p><p>ציון: <strong>{{2.quality}}/10</strong></p><p>סיכום: {{2.summary}}</p><p>קישור ל-PDF: {{1.pdf.url}}</p><p>שורה בגיליון: {{1.meta.sheet_row}}</p>"
+              },
+              "metadata": {
+                "designer": { "x": 900, "y": 150 },
+                "restore": {
+                  "account": { "label": "REPLACE_ME_EMAIL_CONNECTION_LABEL" }
+                }
+              }
+            }
+          ],
+          "metadata": {
+            "designer": { "x": 600, "y": 150 },
+            "filter": {
+              "name": "QA failed",
+              "conditions": [
+                [
+                  {
+                    "a": "{{2.passed}}",
+                    "b": "false",
+                    "o": "text:equal",
+                    "c": 0
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "_comment": {
+    "placeholders": {
+      "REPLACE_ME_WEBHOOK_HOOK_ID_B": "Replaced automatically when you create the webhook in Make",
+      "REPLACE_ME_GAS_DEPLOYMENT_ID": "Your GAS deployment ID (from Deploy → Manage Deployments)",
+      "REPLACE_ME_WA_CONNECTION_ID": "Your WhatsApp Business connection ID in Make",
+      "REPLACE_ME_WA_CONNECTION_LABEL": "Display name of your WhatsApp Business connection",
+      "REPLACE_ME_HR_PHONE": "HR phone in 0XXXXXXXXX format (e.g. 0521234567)",
+      "REPLACE_ME_HR_EMAIL": "HR email address for error notifications",
+      "REPLACE_ME_EMAIL_CONNECTION_ID": "Your email (Gmail/SMTP) connection ID in Make",
+      "REPLACE_ME_EMAIL_CONNECTION_LABEL": "Display name of your email connection"
+    },
+    "whatsapp_templates": {
+      "form_101_confirmation": {
+        "language": "he",
+        "body_params": ["employee_full_name", "tax_year", "pdf_url", "employer_name"],
+        "example_body": "שלום {{1}}, טופס 101 לשנת {{2}} התקבל בהצלחה!\nPDF: {{3}}\nבברכה, {{4}}"
+      },
+      "form_101_hr_notify": {
+        "language": "he",
+        "body_params": ["employee_full_name", "id_number", "tax_year", "pdf_url"],
+        "example_body": "עובד חדש מילא טופס 101:\nשם: {{1}}\nת\"ז: {{2}}\nשנת מס: {{3}}\nPDF: {{4}}"
+      }
+    },
+    "flow_description": "1→Webhook 2→validatePdf(GAS) 3→Router[pass→4→5→6→7→8 / fail→9]"
+  }
+}

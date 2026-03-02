@@ -32,10 +32,10 @@ const CONFIG = {
   MAIN_FOLDER: 'HR_101',
 
   // Webhook של Make — Scenario B: אישור קבלת טופס (נקרא לאחר יצירת PDF)
-  MAKE_WEBHOOK_URL: '',
+  MAKE_WEBHOOK_URL: 'https://hook.eu1.make.com/e3efecqlm7mnpm2gns0gfan7m7e7vdut',
 
   // Webhook של Make — Scenario A: שליחת הזמנה לעובד חדש
-  MAKE_INVITE_WEBHOOK_URL: '',
+  MAKE_INVITE_WEBHOOK_URL: 'https://hook.eu1.make.com/lj01s419gqchr0hxmrnkx19j7zdjp4d8',
 
   // כתובת הטופס הציבורית (GitHub Pages)
   FORM_PUBLIC_URL: 'https://nisimbv.github.io/form-101/index_v6.html',
@@ -45,6 +45,10 @@ const CONFIG = {
   HR_EMAIL: '',
 
   TIMEZONE: 'Asia/Jerusalem',
+
+  // Anthropic API Key — enables Claude visual QA via validatePdf endpoint (optional)
+  // Can also be set in Apps Script → Project Settings → Script Properties
+  ANTHROPIC_API_KEY: '',
 };
 
 function doGet(e) {
@@ -120,6 +124,18 @@ function doGet(e) {
       out.setContent(JSON.stringify({ success: true, rowNum, status, previous: prev }));
     } catch(err) {
       Logger.log('confirmSubmission ERROR: ' + String(err));
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    }
+    return out;
+  }
+
+  // ── Claude visual QA — Make קורא לפני שליחת WhatsApp ─────────────────────
+  // קריאה: GET /exec?action=validatePdf&fileId=<DRIVE_FILE_ID>
+  if (action === 'validatePdf') {
+    try {
+      out.setContent(JSON.stringify(validatePdfAction_(e.parameter)));
+    } catch(err) {
+      Logger.log('validatePdf ERROR: ' + String(err));
       out.setContent(JSON.stringify({ success: false, error: String(err) }));
     }
     return out;
@@ -1087,6 +1103,104 @@ function notifyNewEmployee_(rowNum, name, phone, employer, taxYear) {
   } catch(err) {
     Logger.log('notifyNewEmployee_ error: ' + String(err));
     logError_('notifyNewEmployee_', String(err), rowNum);
+  }
+}
+
+/**
+ * Visual QA via Claude Anthropic API.
+ * Called by Make before sending WhatsApp confirmation to validate the generated PDF.
+ *
+ * Returns: { success, quality, passed, issues, summary }
+ * If no API key is configured → { success:true, skipped:true, quality:10, passed:true }
+ * On error → { success:false, error:"..." }
+ */
+function validatePdfAction_(params) {
+  const fileId = safeString((params && params.fileId) || '');
+  if (!fileId) return { success: false, error: 'fileId נדרש' };
+
+  // Script Properties override CONFIG (preferred — keeps key out of source code)
+  const apiKey =
+    PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY') ||
+    CONFIG.ANTHROPIC_API_KEY || '';
+
+  if (!apiKey || !String(apiKey).trim()) {
+    Logger.log('validatePdfAction_: no ANTHROPIC_API_KEY — skipped');
+    return { success: true, skipped: true, quality: 10, passed: true, summary: 'QA skipped — no API key' };
+  }
+
+  try {
+    const pdfBytes = DriveApp.getFileById(fileId).getBlob().getBytes();
+    const b64 = Utilities.base64Encode(pdfBytes);
+
+    const QA_PROMPT =
+      'You are reviewing a generated Hebrew tax form (Israeli Form 101 / \u05d8\u05d5\u05e4\u05e1 101). ' +
+      'The form has 2 pages. Examine carefully and identify: ' +
+      '1. Text fields in wrong position or missing. ' +
+      '2. Checkmarks at incorrect locations or missing. ' +
+      '3. Text overflow or clipping. ' +
+      '4. Elements misaligned with form background. ' +
+      'Return ONLY valid JSON (no markdown, no explanation): ' +
+      '{"issues":[{"field":"...","page":1,"problem":"..."}],' +
+      '"overall_quality":1,"summary":"..."} ' +
+      'Score: 10=perfect, 8+=production-ready, <8=needs fix.';
+
+    const reqBody = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: b64 },
+          },
+          { type: 'text', text: QA_PROMPT },
+        ],
+      }],
+    };
+
+    const resp = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'pdfs-2024-09-25',
+      },
+      payload: JSON.stringify(reqBody),
+      muteHttpExceptions: true,
+    });
+
+    const httpCode = resp.getResponseCode();
+    if (httpCode !== 200) {
+      const errText = resp.getContentText().slice(0, 300);
+      Logger.log('validatePdfAction_: Anthropic API error ' + httpCode + ': ' + errText);
+      return { success: false, error: 'Anthropic API returned ' + httpCode + ': ' + errText };
+    }
+
+    let parsed = {};
+    try {
+      const apiResp = JSON.parse(resp.getContentText());
+      const text = (apiResp.content && apiResp.content[0] && apiResp.content[0].text) || '{}';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    } catch(parseErr) {
+      Logger.log('validatePdfAction_: JSON parse error: ' + String(parseErr));
+      return { success: false, error: 'Failed to parse Claude response: ' + String(parseErr) };
+    }
+
+    const quality = typeof parsed.overall_quality === 'number' ? parsed.overall_quality : 10;
+    const passed  = quality >= 8;
+    const issues  = Array.isArray(parsed.issues) ? parsed.issues : [];
+    const summary = safeString(parsed.summary);
+
+    Logger.log('validatePdfAction_: quality=' + quality + ' passed=' + passed +
+               ' issues=' + issues.length + ' fileId=' + fileId);
+    return { success: true, quality, passed, issues, summary };
+
+  } catch(err) {
+    Logger.log('validatePdfAction_ error: ' + String(err));
+    return { success: false, error: String(err) };
   }
 }
 

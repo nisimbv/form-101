@@ -10,9 +10,13 @@ APPS_SCRIPT_URL = f"https://script.google.com/macros/s/{PROD_DEPLOYMENT_ID}/exec
 SPREADSHEET_ID = "1VFSgcmNagnsAjXPsSDOgR9fadkjrbacK3beXCw2VG9Q"
 SPREADSHEET_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
 
+# Anthropic API key — used by step_validate_pdf_endpoint() to test the GAS validatePdf action
+# Set via environment variable to avoid committing secrets:  export ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
 # Make.com Scenario B — called by GAS sendToMake() after PDF is created
 # Paste the Custom Webhook URL from Make here to enable end-to-end verification
-MAKE_WEBHOOK_URL = ""
+MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/e3efecqlm7mnpm2gns0gfan7m7e7vdut"
 
 # Make.com Scenario A — called by GAS notifyNewEmployee_() to invite a new employee
 MAKE_INVITE_WEBHOOK_URL = ""
@@ -68,7 +72,7 @@ EXPECTED_SHEET_COLS = {
     "טלפון נייד":                "0500000001",      # col 16
     "סוג הכנסה ממעסיק":         "משכורת",          # col 25 (substring)
     "זכאויות - סיכום":           "תושב",            # col 33 (substring)
-    "סטטוס":                     "✅ הושלם",        # col 39
+    "סטטוס":                     "✅",              # col 39 — matches any success state (הושלם / אושר על ידי HR)
     "קישור PDF":                 "https",           # col 37 — just check not empty
 }
 

@@ -13,6 +13,7 @@ Usage:
     python -m scripts.pipeline --no-make         # skip Make webhook step
     python -m scripts.pipeline --comprehensive   # add full-section PDF verification step
     python -m scripts.pipeline --visual-qa       # add Claude visual QA step (needs ANTHROPIC_API_KEY + poppler)
+    python -m scripts.pipeline --validate-pdf-endpoint  # test GAS validatePdf endpoint (skipped if no API key)
 
 State between steps is stored in .pipeline_state.json
 """
@@ -149,6 +150,77 @@ def step_visual_qa() -> bool:
     return passed
 
 
+def step_validate_pdf_endpoint() -> bool:
+    """
+    Tests the GAS ?action=validatePdf endpoint using the last pipeline PDF fileId.
+    Skipped silently if ANTHROPIC_API_KEY is not set (returns True — not a failure).
+    Reads fileId from .pipeline_state_full.json or .pipeline_state.json.
+    """
+    from pathlib import Path
+    import requests
+    from scripts.config import APPS_SCRIPT_URL, ANTHROPIC_API_KEY
+
+    print("\n[VALIDATE PDF ENDPOINT]")
+
+    # Locate the most recent state file with a fileId
+    file_id = None
+    for sf in [".pipeline_state_full.json", ".pipeline_state.json"]:
+        p = Path(__file__).parent.parent / sf
+        if p.exists():
+            try:
+                state = json.loads(p.read_text())
+                file_id = state.get("fileId")
+                if file_id:
+                    break
+            except Exception:
+                pass
+
+    if not file_id:
+        print("  ❌ No state file with fileId found — run a test step first")
+        return False
+
+    print(f"  fileId: {file_id}")
+
+    try:
+        r = requests.get(
+            APPS_SCRIPT_URL,
+            params={"action": "validatePdf", "fileId": file_id},
+            timeout=120,
+        )
+        result = r.json()
+    except Exception as e:
+        print(f"  ❌ Request failed: {e}")
+        return False
+
+    if not result.get("success"):
+        print(f"  ❌ GAS error: {result.get('error')}")
+        return False
+
+    if result.get("skipped"):
+        print("  ⏭  validatePdf skipped — ANTHROPIC_API_KEY not configured in GAS (pass)")
+        if not ANTHROPIC_API_KEY:
+            print("     Tip: set ANTHROPIC_API_KEY env var + GAS Script Property to enable QA")
+        return True
+
+    quality = result.get("quality", 0)
+    passed  = result.get("passed", False)
+    summary = result.get("summary", "")
+    issues  = result.get("issues", [])
+
+    if passed:
+        print(f"  ✅ Quality: {quality}/10 — {summary}")
+        if issues:
+            print(f"     Minor issues ({len(issues)}):")
+            for iss in issues:
+                print(f"       • [p{iss.get('page','-')}] {iss.get('field','?')}: {iss.get('problem','')}")
+        return True
+    else:
+        print(f"  ❌ Quality: {quality}/10 (below threshold 8) — {summary}")
+        for iss in issues:
+            print(f"     • [p{iss.get('page','-')}] {iss.get('field','?')}: {iss.get('problem','')}")
+        return False
+
+
 def step_verify_make() -> bool:
     from scripts.config import MAKE_WEBHOOK_URL
     print("\n[VERIFY MAKE]")
@@ -186,12 +258,13 @@ def _banner(title: str) -> None:
 
 def main() -> None:
     args = sys.argv[1:]
-    no_deploy     = "--no-deploy"     in args
-    verify_only   = "--verify-only"   in args
-    no_make       = "--no-make"       in args
-    headless      = "--visible"       not in args
-    comprehensive = "--comprehensive" in args
-    visual_qa     = "--visual-qa"     in args
+    no_deploy            = "--no-deploy"            in args
+    verify_only          = "--verify-only"          in args
+    no_make              = "--no-make"              in args
+    headless             = "--visible"              not in args
+    comprehensive        = "--comprehensive"        in args
+    visual_qa            = "--visual-qa"            in args
+    validate_pdf_ep      = "--validate-pdf-endpoint" in args
 
     steps: list[tuple[str, callable]] = []
 
@@ -209,6 +282,9 @@ def main() -> None:
 
     if visual_qa:
         steps.append(("Claude visual QA", step_visual_qa))
+
+    if validate_pdf_ep:
+        steps.append(("Test validatePdf GAS endpoint", step_validate_pdf_endpoint))
 
     if not no_make:
         steps.append(("Verify Make webhook", step_verify_make))
