@@ -117,3 +117,109 @@ EXPECTED_MARKS = [
 
 TOLERANCE_MM = 8.0   # ±mm around expected position
 MM_TO_PT     = 2.8346  # 1 mm = 2.8346 pt at 72 DPI
+
+# ── Comprehensive test data (all sections) ───────────────────────────────────
+TEST_DATA_FULL = {
+    # Section A — Employer
+    "employer_name":   "חברת בדיקות",
+    "employer_tax_id": "500000001",
+    "employer_phone":  "0500000002",
+    "start_date":      "2026-01-01",
+    # Section B — Employee
+    "last_name":        "טסט",
+    "first_name":       "אוטומציה",
+    "id_number":        "123456789",
+    "birth_date":       "1985-06-15",
+    "mobile_phone":     "0500000001",
+    "email":            "auto@test.com",
+    "street":           "רחוב הבדיקה",
+    "house_number":     "1",
+    "city":             "תל אביב",
+    "postal_code":      "61000",
+    "gender":           "זכר",
+    "marital_status":   "נשוי/אה",
+    "israeli_resident": "כן",
+    "kibbutz_member":   "לא",
+    "health_fund":      "מכבי",
+    # Section C — 2 children
+    "children": [
+        {"name": "ילד א", "id": "222222222", "birth_date": "2018-03-10",
+         "in_custody": True, "receives_allowance": True},
+        {"name": "ילד ב", "id": "333333333", "birth_date": "2021-07-22",
+         "in_custody": True, "receives_allowance": False},
+    ],
+    # Section D — Income types
+    "income_type_monthly":  True,
+    "income_type_pension":  True,
+    # Section E — Other income
+    "has_other_income":     False,
+    "no_study_fund_other":  True,
+    "no_pension_other":     True,
+    # Section F — Spouse
+    "has_spouse":           True,
+    "spouse_last_name":     "לוי",
+    "spouse_first_name":    "שרה",
+    "spouse_id_number":     "444444444",
+    "spouse_birth_date":    "1987-04-20",
+    "spouse_has_income":    "לא",
+    # Section H — Reliefs
+    "relief_1_resident":        True,
+    "relief_3_settlement":      True,
+    "relief_5_spouse":          True,
+    "relief_7_children_custody": True,
+    # Declaration
+    "confirm_declaration": True,
+}
+
+# ── Expected PDF text fields for comprehensive test ──────────────────────────
+# (name, page, left_mm, top_mm, expected_text)
+EXPECTED_TEXT_FULL = [
+    # Page 1 header
+    ("taxYear",           1, 106.0,  25.3, "2026"),
+    # Section A — Employer (fixed positions)
+    ("employer_name",     1, 145.0,  59.4, "חברת"),
+    ("employer_phone",    1,  58.4,  59.4, "0500000002"),
+    ("employer_tax_id",   1,  10.9,  59.4, "500000001"),
+    # Section B — Employee
+    ("last_name",         1, 139.0,  80.8, "טסט"),
+    ("first_name",        1,  98.0,  80.8, "אוטומציה"),
+    ("id_number_p1",      1, 183.0,  80.8, "123456789"),
+    ("birth_date",        1,  58.6,  80.8, "15/06/1985"),
+    ("postal_code",       1,  10.0,  89.0, "61000"),
+    ("mobile_phone",      1,  52.6, 108.3, "0500000001"),
+    # Section F — Spouse
+    ("spouse_last_name",  1, 140.0, 248.0, "לוי"),
+    ("spouse_first_name", 1, 103.0, 248.0, "שרה"),
+    ("spouse_id",         1, 184.0, 248.0, "444444444"),
+    # Page 2 header
+    ("id_number_p2",      2,  80.0,   7.2, "123456789"),
+]
+
+# ── Expected PDF marks for comprehensive test ────────────────────────────────
+# (name, page, left_mm, top_mm)
+EXPECTED_MARKS_FULL = [
+    # Page 1 — Section B radios
+    ("gender_male",             1, 187.1, 100.0),
+    ("marital_married",         1, 152.5,  99.5),
+    ("resident_yes",            1, 108.8, 100.3),
+    ("kibbutz_no",              1,  96.2, 104.2),
+    ("hmo_yes",                 1,  44.2, 104.7),
+    # Page 1 — Section C children (row 0 custody + allowance)
+    ("child0_in_custody",       1, 186.9, 129.8),
+    ("child0_receives_allowance", 1, 184.4, 129.8),
+    ("child1_in_custody",       1, 186.9, 136.3),
+    # Page 1 — Section D income types
+    ("income_type_monthly",     1,  84.7, 127.5),
+    ("income_type_pension",     1,  84.7, 145.3),
+    # Page 1 — Section E no other income
+    ("no_other_income",         1,  84.2, 161.7),
+    ("no_study_fund_other",     1,  83.9, 208.1),
+    ("no_pension_other",        1,  83.7, 220.3),
+    # Page 1 — Section F spouse (has_spouse=True + spouse_has_income='לא' → mark no-income box at 145.3mm)
+    ("spouse_no_income",        1, 145.3, 254.3),
+    # Page 2 — Section H reliefs
+    ("relief_1_resident",       2, 181.0,  15.6),
+    ("relief_3_settlement",     2, 181.0,  35.3),
+    ("relief_5_spouse",         2, 181.0,  59.3),
+    ("relief_7_children_custody", 2, 181.0, 75.3),
+]

@@ -46,10 +46,10 @@
   <div class="field" style="left:106mm; top:25.3mm; width:26mm; text-align:center; font-size:13pt; font-weight:bold;"><?= s(pdf.taxYear || data.taxYear) ?></div>
 
   <!-- א. פרטי המעסיק -->
-  <div class="field" style="left:160mm; top:57.8mm; width:32mm; text-align:right;"><?= s(pdf.employer_name || data.employer_name) ?></div>
-  <div class="field" style="left:103mm; top:57.8mm; width:46mm; text-align:center;"><?= s(pdf.employer_phone || data.employer_phone) ?></div>
-  <div class="field" style="left:46mm; top:57.8mm; width:46mm; text-align:center;"><?= s(pdf.employer_tax_id || data.employer_tax_id) ?></div>
-  <div class="field small" style="left:8mm; top:58.0mm; width:34mm; text-align:right;"><?= s(pdf.employer_address || data.employer_address) ?></div>
+  <div class="field" style="left:145mm; top:59.4mm; width:50mm; text-align:right;"><?= s(pdf.employer_name || data.employer_name) ?></div>
+  <div class="field small" style="left:90mm; top:59.4mm; width:53mm; text-align:right;"><?= s(pdf.employer_address || data.employer_address) ?></div>
+  <div class="field" style="left:58.4mm; top:59.4mm; width:30mm; text-align:center;"><?= s(pdf.employer_phone || data.employer_phone) ?></div>
+  <div class="field" style="left:10.9mm; top:59.4mm; width:31mm; text-align:center;"><?= s(pdf.employer_tax_id || data.employer_tax_id) ?></div>
 
   <!-- ב. פרטי העובד -->
   <div class="field" style="left:139mm; top:80.8mm; width:44mm; text-align:right;"><?= s(data.last_name) ?></div>
@@ -84,6 +84,7 @@
 
   <!-- קופת חולים -->
   <div class="field small" style="left:145mm; top:122.5mm; width:32mm; text-align:center;"><?= s(data.health_fund) ?></div>
+  <? if (data.health_fund) { ?><div class="mark" style="left:44.22mm; top:104.73mm;">✓</div><? } ?>
 
   <!-- ד. תאריך תחילת עבודה -->
   <div class="field small" style="left:10mm; top:123mm;   width:30mm; text-align:center;"><?= dmy(data.start_date) ?></div>
@@ -97,7 +98,7 @@
   <? if (flags.income_type_scholarship) { ?> <div class="mark" style="left:84.7mm; top:149.5mm;">✓</div> <? } ?>
 
   <!-- ג. ילדים - עד 10 שורות -->
-  <? for (var i=0; i<6; i++) { var c = childAt(i); var y = 131.4 + (i*7.65); ?>
+  <? var childY = [131.4, 137.9, 145.7, 153.5, 161.2, 168.9]; for (var i=0; i<6; i++) { var c = childAt(i); var y = childY[i]; ?>
     <div class="field tiny" style="left:170.7mm; top:<?= y ?>mm; width:13mm; text-align:right;"><?= s(c.name) ?></div>
     <div class="field tiny" style="left:133.7mm; top:<?= y ?>mm; width:25mm; text-align:center;"><?= s(c.id) ?></div>
     <div class="field tiny" style="left:99.8mm; top:<?= y ?>mm; width:34mm; text-align:center;"><?= dmy(c.birth_date) ?></div>
@@ -116,6 +117,8 @@
   <? if (flags.other_income_scholarship) { ?><div class="mark" style="left:42.6mm; top:183.1mm;">✓</div><? } ?>
   <? if (flags.no_study_fund_other) { ?><div class="mark" style="left:83.9mm; top:208.1mm;">✓</div><? } ?>
   <? if (flags.no_pension_other) { ?><div class="mark" style="left:83.7mm; top:220.3mm;">✓</div><? } ?>
+  <? if (flags.relief_wants) { ?><div class="mark" style="left:83.87mm; top:191.33mm;">✓</div><? } ?>
+  <? if (flags.relief_has_other) { ?><div class="mark" style="left:83.87mm; top:199.55mm;">✓</div><? } ?>
 
   <!-- טבלת הכנסות נוספות -->
   <? for (var i=0; i<3; i++) { var inc = incAt(i); var y2 = 222.0 + (i*5.0); ?>
@@ -128,7 +131,7 @@
 
   <!-- ו. בן/בת זוג -->
   <? if (!data.has_spouse) { ?><div class="mark" style="left:145.3mm; top:255.1mm;">✓</div><? } ?>
-  <? if (data.has_spouse) { ?><div class="mark" style="left:100.4mm; top:255.2mm;">✓</div><? } ?>
+  <? if (data.has_spouse && !eq(data.spouse_has_income,'לא')) { ?><div class="mark" style="left:100.4mm; top:255.2mm;">✓</div><? } ?>
   <div class="field tiny" style="left:140mm; top:248mm; width:42mm; text-align:right;"><?= s(data.spouse_last_name) ?></div>
   <div class="field tiny" style="left:103mm; top:248mm; width:37mm; text-align:right;"><?= s(data.spouse_first_name) ?></div>
   <div class="field tiny" style="left:184mm; top:248mm; width:23mm; text-align:center;"><?= s(data.spouse_id_number || data.spouse_passport_number) ?></div>

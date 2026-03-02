@@ -315,18 +315,19 @@ function normalizePayload(raw) {
     'income_type_monthly','income_type_additional','income_type_partial','income_type_daily','income_type_pension','income_type_scholarship',
     'has_other_income','other_income_monthly','other_income_additional','other_income_partial','other_income_daily','other_income_pension','other_income_scholarship',
     'no_study_fund_other','no_pension_other',
-    'has_spouse','spouse_has_income',
+    'has_spouse',
     'has_tax_coordination','tax_coordination_approved',
     'confirm_declaration',
     // reliefs (דוגמאות – אם קיימים בטופס)
     'relief_1_resident','relief_2_disabled','relief_2_1_allowance','relief_3_settlement','relief_4_new_immigrant','relief_5_spouse','relief_6_single_parent',
     'relief_7_children_custody','relief_8_children_general','relief_9_sole_parent','relief_10_children_not_custody','relief_11_disabled_children',
     'relief_12_alimony','relief_13_age_16_18','relief_14_discharged_soldier','relief_15_academic','relief_16_reserve','relief_17_no_income',
+    'relief_wants','relief_has_other',
   ];
   boolKeys.forEach(k => { if (k in data) data[k] = toBoolean(data[k]); });
 
-  // text radios/selects: keep as string
-  ['gender','marital_status','israeli_resident','kibbutz_member','health_fund'].forEach(k => { if (k in data) data[k] = safeString(data[k]); });
+  // text radios/selects: keep as string (NOT booleans)
+  ['gender','marital_status','israeli_resident','kibbutz_member','health_fund','spouse_has_income'].forEach(k => { if (k in data) data[k] = safeString(data[k]); });
 
   // Normalize phone numbers to IL format (0XXXXXXXXX)
   ['mobile_phone','employer_phone'].forEach(k => { if (k in data) data[k] = normalizePhone_(data[k]); });
@@ -806,7 +807,9 @@ function buildPdfViewModel(data) {
       relief_14_discharged_soldier: !!data.relief_14_discharged_soldier,
       relief_15_academic: !!data.relief_15_academic,
       relief_16_reserve: !!data.relief_16_reserve,
-      relief_17_no_income: !!data.relief_17_no_income
+      relief_17_no_income: !!data.relief_17_no_income,
+      relief_wants: !!data.relief_wants,
+      relief_has_other: !!data.relief_has_other
     }
   };
 }
@@ -930,6 +933,8 @@ function sendToMake(data, pdfFile, rowNum) {
       relief_15_academic:             !!data.relief_15_academic,
       relief_16_reserve:              !!data.relief_16_reserve,
       relief_17_no_income:            !!data.relief_17_no_income,
+      relief_wants:                   !!data.relief_wants,
+      relief_has_other:               !!data.relief_has_other,
       dates: {
         relief_3_date:            safeString(data.relief_3_date),
         relief_4_date:            safeString(data.relief_4_date),

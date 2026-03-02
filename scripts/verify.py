@@ -47,6 +47,8 @@ from scripts.config import (
     EXPECTED_SHEET_COLS,
     EXPECTED_TEXT_FIELDS,
     EXPECTED_MARKS,
+    EXPECTED_TEXT_FULL,
+    EXPECTED_MARKS_FULL,
     TOLERANCE_MM,
     MM_TO_PT,
 )
@@ -186,11 +188,12 @@ def verify_pdf(pdf_bytes: bytes) -> bool:
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _crop(page, left_mm: float, top_mm: float, w_mm: float = 50, h_mm: float = 12):
-    """Crop a region from a pdfplumber page (coords in mm, top-left origin)."""
+    """Crop a region from a pdfplumber page (coords in mm, top-left origin).
+    Coordinates are clamped to page bounds to avoid pdfplumber errors on right/bottom edges."""
     x0 = max(0, (left_mm - TOLERANCE_MM) * MM_TO_PT)
     y0 = max(0, (top_mm  - TOLERANCE_MM) * MM_TO_PT)
-    x1 = (left_mm + w_mm + TOLERANCE_MM) * MM_TO_PT
-    y1 = (top_mm  + h_mm + TOLERANCE_MM) * MM_TO_PT
+    x1 = min(page.width,  (left_mm + w_mm + TOLERANCE_MM) * MM_TO_PT)
+    y1 = min(page.height, (top_mm  + h_mm + TOLERANCE_MM) * MM_TO_PT)
     return page.crop((x0, y0, x1, y1))
 
 
@@ -203,12 +206,17 @@ def _he_visual(text: str) -> str:
 
 def _text_near(page, text: str, left_mm: float, top_mm: float) -> bool:
     """Search for text (and its Hebrew visual-order reversal) in a region and then
-    the full page as fallback."""
+    the full page as fallback.  The full-page fallback always runs regardless of
+    any crop-region errors (e.g. right-edge fields exceeding page width)."""
     variants = {text, _he_visual(text)}
     try:
         region_text = _crop(page, left_mm, top_mm).extract_text() or ""
         if any(v in region_text for v in variants):
             return True
+    except Exception:
+        pass
+    # Full-page fallback — separate try so crop errors don't suppress it
+    try:
         full = page.extract_text() or ""
         if any(v in full for v in variants):
             return True
@@ -271,6 +279,72 @@ def verify_confirm_submission(row_num: int) -> bool:
     else:
         print(f"  ❌ confirmSubmission failed: {result.get('error')}")
         return False
+
+
+# ── Comprehensive verification ────────────────────────────────────────────────
+
+def verify_pdf_comprehensive(pdf_bytes: bytes) -> bool:
+    """Verify PDF against EXPECTED_TEXT_FULL + EXPECTED_MARKS_FULL (comprehensive scenario)."""
+    print("\n[VERIFY PDF — COMPREHENSIVE]")
+    if not pdf_bytes:
+        print("  ❌ No PDF bytes")
+        return False
+
+    all_ok = True
+
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        pages = pdf.pages
+
+        if len(pages) == 2:
+            print(f"  ✅ Page count: 2")
+        else:
+            print(f"  ❌ Page count: {len(pages)} (expected 2)")
+            all_ok = False
+
+        print()
+        for name, page_num, left_mm, top_mm, expected in EXPECTED_TEXT_FULL:
+            if page_num > len(pages):
+                continue
+            page = pages[page_num - 1]
+            found = _text_near(page, expected, left_mm, top_mm)
+            if found:
+                print(f"  ✅ text/{name}: '{expected}'  @({left_mm}mm, {top_mm}mm)")
+            else:
+                print(f"  ❌ text/{name}: '{expected}' NOT found near ({left_mm}mm, {top_mm}mm)")
+                all_ok = False
+
+        print()
+        all_mark_positions = _collect_all_marks(pages)
+        if len(all_mark_positions) > 3:
+            unique = set((round(x), round(y)) for x, y in all_mark_positions)
+            if len(unique) <= 1:
+                print(
+                    f"  ❌ ALL {len(all_mark_positions)} marks at same position "
+                    f"{list(unique)[0]} — CSS transform bug!"
+                )
+                all_ok = False
+            else:
+                print(
+                    f"  ✅ {len(all_mark_positions)} marks spread across "
+                    f"{len(unique)} distinct positions"
+                )
+
+        for name, page_num, left_mm, top_mm in EXPECTED_MARKS_FULL:
+            if page_num > len(pages):
+                continue
+            page = pages[page_num - 1]
+            found = _mark_near(page, left_mm, top_mm)
+            if found:
+                print(f"  ✅ mark/{name}  @({left_mm}mm, {top_mm}mm)")
+            else:
+                print(f"  ⚠  mark/{name}  NOT confirmed @({left_mm}mm, {top_mm}mm)")
+
+    return all_ok
+
+
+def verify_sheet_comprehensive(row_num: int | None = None) -> bool:
+    """Verify the last sheet row using EXPECTED_SHEET_COLS (same as verify_sheet but explicit)."""
+    return verify_sheet()
 
 
 # ── CLI entry ─────────────────────────────────────────────────────────────────

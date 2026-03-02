@@ -11,6 +11,8 @@ Usage:
     python -m scripts.pipeline --verify-only     # step 3 only (reads state file)
     python -m scripts.pipeline --visible         # show browser window
     python -m scripts.pipeline --no-make         # skip Make webhook step
+    python -m scripts.pipeline --comprehensive   # add full-section PDF verification step
+    python -m scripts.pipeline --visual-qa       # add Claude visual QA step (needs ANTHROPIC_API_KEY + poppler)
 
 State between steps is stored in .pipeline_state.json
 """
@@ -82,6 +84,71 @@ def step_verify_confirm() -> bool:
     return verify_confirm_submission(int(row_num))
 
 
+def step_verify_comprehensive() -> bool:
+    """
+    Posts TEST_DATA_FULL directly to GAS (no Playwright) and runs comprehensive
+    PDF + sheet verification covering all form sections.
+    """
+    from scripts.test_pdf_direct import run_direct_test
+    from scripts.verify import verify_sheet_comprehensive, verify_pdf_comprehensive
+
+    result, pdf_bytes = run_direct_test(save_state=False)
+    if not result.get("success"):
+        print("  ❌ Direct API test failed — cannot run comprehensive verification")
+        return False
+
+    sheet_ok = verify_sheet_comprehensive(result.get("rowNum"))
+    pdf_ok = verify_pdf_comprehensive(pdf_bytes) if pdf_bytes else False
+
+    if sheet_ok and pdf_ok:
+        print("\n  ✅ Comprehensive verification PASSED")
+    else:
+        print("\n  ❌ Comprehensive verification FAILED — see above")
+    return sheet_ok and pdf_ok
+
+
+def step_visual_qa() -> bool:
+    """
+    Runs Claude visual QA on the PDF from the last pipeline run.
+    Skipped silently if ANTHROPIC_API_KEY is not set or poppler is unavailable.
+    """
+    import json, base64
+    from pathlib import Path
+    import requests
+
+    # Try comprehensive state file first, then basic state file
+    for sf in [".pipeline_state_full.json", ".pipeline_state.json"]:
+        p = Path(__file__).parent.parent / sf
+        if p.exists():
+            state = json.loads(p.read_text())
+            file_id = state.get("fileId")
+            if file_id:
+                break
+    else:
+        print("  ❌ No state file with fileId found — run a test step first")
+        return False
+
+    from scripts.config import APPS_SCRIPT_URL
+    try:
+        r = requests.get(
+            APPS_SCRIPT_URL,
+            params={"action": "getPdf", "id": file_id},
+            timeout=60,
+        )
+        result = r.json()
+        if not result.get("success"):
+            print(f"  ❌ PDF download error: {result.get('error')}")
+            return False
+        pdf_bytes = base64.b64decode(result["data"])
+    except Exception as e:
+        print(f"  ❌ PDF download failed: {e}")
+        return False
+
+    from scripts.validate_claude import run_visual_qa
+    _, passed = run_visual_qa(pdf_bytes)
+    return passed
+
+
 def step_verify_make() -> bool:
     from scripts.config import MAKE_WEBHOOK_URL
     print("\n[VERIFY MAKE]")
@@ -119,10 +186,12 @@ def _banner(title: str) -> None:
 
 def main() -> None:
     args = sys.argv[1:]
-    no_deploy    = "--no-deploy"    in args
-    verify_only  = "--verify-only"  in args
-    no_make      = "--no-make"      in args
-    headless     = "--visible"      not in args
+    no_deploy     = "--no-deploy"     in args
+    verify_only   = "--verify-only"   in args
+    no_make       = "--no-make"       in args
+    headless      = "--visible"       not in args
+    comprehensive = "--comprehensive" in args
+    visual_qa     = "--visual-qa"     in args
 
     steps: list[tuple[str, callable]] = []
 
@@ -134,6 +203,12 @@ def main() -> None:
 
     steps.append(("Verify Sheet + PDF", step_verify))
     steps.append(("Test confirmSubmission callback", step_verify_confirm))
+
+    if comprehensive:
+        steps.append(("Comprehensive PDF verification (all sections)", step_verify_comprehensive))
+
+    if visual_qa:
+        steps.append(("Claude visual QA", step_visual_qa))
 
     if not no_make:
         steps.append(("Verify Make webhook", step_verify_make))
