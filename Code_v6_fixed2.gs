@@ -307,14 +307,60 @@ function saveToSheet(data) {
   if (!sheet) sheet = ss.insertSheet(CONFIG.SHEET_NAME);
 
     const headers = [
-    'תאריך הגשה','שנת מס','שם משפחה','שם פרטי','מספר זהות','מספר דרכון','טלפון נייד','אימייל',
-    'שם המעסיק','מספר תיק ניכויים','טלפון המעסיק','כתובת המעסיק','תאריך תחילת עבודה',
-    'מין','מצב משפחתי','תושב ישראל','חבר קיבוץ/מושב שיתופי','קופת חולים',
-    'מספר ילדים','מספר הכנסות נוספות','יש בן/בת זוג','יש הכנסות אחרות','יש תיאום מס',
-    'תאריך הצהרה',
-    'כתובת עובד','תאריך לידה','תאריך עלייה','סוג הכנסה ממעסיק','זכאויות - סיכום','פרטי בן/בת זוג',
-    'קישור PDF','מזהה קובץ ב-Drive','סטטוס',
-    'ילדים (JSON)','הכנסות נוספות (JSON)','שינויים במהלך השנה (JSON)','סיכום','JSON מלא'
+    // מטא מערכת
+    'תאריך הגשה',                    // 1
+    'שנת מס',                        // 2
+    // סעיף א׳ — פרטי המעסיק
+    'שם המעסיק',                     // 3
+    'מספר תיק ניכויים',              // 4
+    'טלפון המעסיק',                  // 5
+    'כתובת המעסיק',                  // 6
+    'תאריך תחילת עבודה',             // 7
+    // סעיף ב׳ — פרטי העובד
+    'שם משפחה',                      // 8
+    'שם פרטי',                       // 9
+    'מספר זהות',                     // 10
+    'מספר דרכון',                    // 11
+    'תאריך לידה',                    // 12
+    'תאריך עלייה',                   // 13
+    'כתובת עובד',                    // 14
+    'מיקוד',                         // 15
+    'טלפון נייד',                    // 16
+    'אימייל',                        // 17
+    'מין',                           // 18
+    'מצב משפחתי',                    // 19
+    'תושב ישראל',                    // 20
+    'חבר קיבוץ/מושב שיתופי',        // 21
+    'קופת חולים',                    // 22
+    // סעיף ג׳ — ילדים
+    'מספר ילדים',                    // 23
+    'ילדים (JSON)',                   // 24
+    // סעיף ד׳ — סוג ההכנסה
+    'סוג הכנסה ממעסיק',              // 25
+    // סעיף ה׳ — הכנסות ממעסיקים אחרים
+    'יש הכנסות אחרות',              // 26
+    'מספר הכנסות נוספות',           // 27
+    'הכנסות נוספות (JSON)',          // 28
+    'ללא קרן השתלמות אחרת',         // 29
+    'ללא פנסיה/גמל אחרת',           // 30
+    // סעיף ו׳ — בן/בת זוג
+    'יש בן/בת זוג',                 // 31
+    'פרטי בן/בת זוג',               // 32
+    // סעיף ח׳ — זכאויות
+    'זכאויות - סיכום',              // 33
+    // סעיף ת׳ — תיאום מס
+    'יש תיאום מס',                  // 34
+    // סעיף ז׳ — שינויים
+    'שינויים במהלך השנה (JSON)',     // 35
+    // הצהרה
+    'תאריך הצהרה',                   // 36
+    // מערכת / PDF
+    'קישור PDF',                     // 37
+    'מזהה קובץ ב-Drive',             // 38
+    'סטטוס',                         // 39
+    // פנימי
+    'סיכום',                         // 40
+    'JSON מלא',                      // 41
   ];
 
   // Set headers — refresh if empty or content doesn't match V6 layout
@@ -331,48 +377,61 @@ function saveToSheet(data) {
     sheet.autoResizeColumns(1, headers.length);
   }
 
-  const submittedAt = formatTimestamp_(data.submitted_at);
-  const fullJson = JSON.stringify(data);
-
     const row = [
-    formatTimestamp_(data.submitted_at),
-    data.taxYear,
-    safeString(data.last_name),
-    safeString(data.first_name),
-    safeString(data.id_number),
-    safeString(data.passport_number),
-    safeString(data.mobile_phone),
-    safeString(data.email),
-    safeString(data.employer_name),
-    safeString(data.employer_tax_id),
-    safeString(data.employer_phone),
-    safeString(data.employer_address),
-    safeString(data.start_date),
-    safeString(data.gender),
-    safeString(data.marital_status),
-    safeString(data.israeli_resident),
-    safeString(data.kibbutz_member),
-    safeString(data.health_fund),
-    data.children.length,
-    data.additional_incomes.length,
-    data.has_spouse ? 'כן' : 'לא',
-    data.has_other_income ? 'כן' : 'לא',
-    data.has_tax_coordination ? 'כן' : 'לא',
-    safeString(data.declaration_date),
-    safeString(data.address),
-    safeString(data.birth_date),
-    safeString(data.aliya_date),
-    safeString(data.summary_income_types),
-    safeString(data.summary_reliefs),
-    safeString(data.summary_spouse),
-    '',
-    '',
-    'ממתין ל-PDF',
-    JSON.stringify(data.children),
-    JSON.stringify(data.additional_incomes),
-    JSON.stringify(data.changes),
-    JSON.stringify(buildSummary(data)),
-    JSON.stringify(data)
+    // מטא מערכת
+    formatTimestamp_(data.submitted_at),      // 1:  תאריך הגשה
+    data.taxYear,                             // 2:  שנת מס
+    // סעיף א׳ — פרטי המעסיק
+    safeString(data.employer_name),           // 3:  שם המעסיק
+    safeString(data.employer_tax_id),         // 4:  מספר תיק ניכויים
+    safeString(data.employer_phone),          // 5:  טלפון המעסיק
+    safeString(data.employer_address),        // 6:  כתובת המעסיק
+    safeString(data.start_date),              // 7:  תאריך תחילת עבודה
+    // סעיף ב׳ — פרטי העובד
+    safeString(data.last_name),               // 8:  שם משפחה
+    safeString(data.first_name),              // 9:  שם פרטי
+    safeString(data.id_number),               // 10: מספר זהות
+    safeString(data.passport_number),         // 11: מספר דרכון
+    safeString(data.birth_date),              // 12: תאריך לידה
+    safeString(data.aliya_date),              // 13: תאריך עלייה
+    safeString(data.address),                 // 14: כתובת עובד
+    safeString(data.postal_code),             // 15: מיקוד
+    safeString(data.mobile_phone),            // 16: טלפון נייד
+    safeString(data.email),                   // 17: אימייל
+    safeString(data.gender),                  // 18: מין
+    safeString(data.marital_status),          // 19: מצב משפחתי
+    safeString(data.israeli_resident),        // 20: תושב ישראל
+    safeString(data.kibbutz_member),          // 21: חבר קיבוץ/מושב שיתופי
+    safeString(data.health_fund),             // 22: קופת חולים
+    // סעיף ג׳ — ילדים
+    data.children.length,                     // 23: מספר ילדים
+    JSON.stringify(data.children),            // 24: ילדים (JSON)
+    // סעיף ד׳ — סוג ההכנסה
+    safeString(data.summary_income_types),    // 25: סוג הכנסה ממעסיק
+    // סעיף ה׳ — הכנסות ממעסיקים אחרים
+    data.has_other_income ? 'כן' : 'לא',     // 26: יש הכנסות אחרות
+    data.additional_incomes.length,           // 27: מספר הכנסות נוספות
+    JSON.stringify(data.additional_incomes),  // 28: הכנסות נוספות (JSON)
+    data.no_study_fund_other ? 'כן' : 'לא', // 29: ללא קרן השתלמות אחרת
+    data.no_pension_other ? 'כן' : 'לא',    // 30: ללא פנסיה/גמל אחרת
+    // סעיף ו׳ — בן/בת זוג
+    data.has_spouse ? 'כן' : 'לא',           // 31: יש בן/בת זוג
+    safeString(data.summary_spouse),          // 32: פרטי בן/בת זוג
+    // סעיף ח׳ — זכאויות
+    safeString(data.summary_reliefs),         // 33: זכאויות - סיכום
+    // סעיף ת׳ — תיאום מס
+    data.has_tax_coordination ? 'כן' : 'לא', // 34: יש תיאום מס
+    // סעיף ז׳ — שינויים
+    JSON.stringify(data.changes),             // 35: שינויים במהלך השנה (JSON)
+    // הצהרה
+    safeString(data.declaration_date),        // 36: תאריך הצהרה
+    // מערכת / PDF
+    '',                                       // 37: קישור PDF
+    '',                                       // 38: מזהה קובץ ב-Drive
+    'ממתין ל-PDF',                           // 39: סטטוס
+    // פנימי
+    JSON.stringify(buildSummary(data)),        // 40: סיכום
+    JSON.stringify(data),                     // 41: JSON מלא
   ];
 
   sheet.appendRow(row);
@@ -415,10 +474,10 @@ function updateSheetAfterPdf(rowNum, pdfFile) {
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   if (!sheet) return;
 
-  // עמודות 31-33 לפי headers (קישור PDF, מזהה קובץ, סטטוס)
-  sheet.getRange(rowNum, 31).setValue(pdfFile.getUrl());
-  sheet.getRange(rowNum, 32).setValue(pdfFile.getId());
-  sheet.getRange(rowNum, 33).setValue('✅ הושלם');
+  // עמודות 37-39 לפי headers (קישור PDF, מזהה קובץ, סטטוס)
+  sheet.getRange(rowNum, 37).setValue(pdfFile.getUrl());
+  sheet.getRange(rowNum, 38).setValue(pdfFile.getId());
+  sheet.getRange(rowNum, 39).setValue('✅ הושלם');
 }
 
 /* ==============================

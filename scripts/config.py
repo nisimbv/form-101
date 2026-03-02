@@ -39,16 +39,19 @@ TEST_DATA = {
 
 # ── Sheet column validation ──────────────────────────────────────────────────
 # Maps Hebrew column header → expected value (substring match is enough)
+# Schema v7: 41 columns in official Form 101 section order
 EXPECTED_SHEET_COLS = {
-    "שנת מס":               "2026",
-    "שם משפחה":             "טסט",
-    "שם פרטי":              "אוטומציה",
-    "מספר זהות":            "123456789",       # actual header in V6
-    "טלפון נייד":           "0500000001",
-    "שם המעסיק":            "חברת בדיקות",    # actual header in V6
-    "תאריך תחילת עבודה":   "2026-01-01",      # stored as Date in Sheets → UTC normalized
-    "סטטוס":                "✅ הושלם",
-    "קישור PDF":            "https",           # just check it's not empty
+    "שנת מס":                    "2026",          # col 2
+    "שם המעסיק":                 "חברת בדיקות",  # col 3
+    "שם משפחה":                  "טסט",           # col 8
+    "שם פרטי":                   "אוטומציה",      # col 9
+    "מספר זהות":                 "123456789",      # col 10
+    "טלפון נייד":                "0500000001",     # col 16
+    "תאריך תחילת עבודה":        "2026-01-01",     # col 7
+    "סוג הכנסה ממעסיק":         "משכורת",         # col 25 (substring)
+    "זכאויות - סיכום":           "תושב",           # col 33 (substring)
+    "סטטוס":                     "✅ הושלם",       # col 39
+    "קישור PDF":                 "https",          # col 37 — just check not empty
 }
 
 # ── Expected PDF text fields: (name, page, left_mm, top_mm, expected_text) ──
