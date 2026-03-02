@@ -237,6 +237,42 @@ def _collect_all_marks(pages) -> list[tuple[float, float]]:
     return positions
 
 
+# ── confirmSubmission callback test ───────────────────────────────────────────
+
+def verify_confirm_submission(row_num: int) -> bool:
+    """
+    Tests the doGet?action=confirmSubmission endpoint.
+    Simulates the callback Make would send after delivering the WhatsApp message.
+    """
+    print("\n[VERIFY CONFIRM SUBMISSION]")
+    status_to_set = "✅ הושלם · Pipeline Verified"
+    try:
+        r = requests.get(
+            APPS_SCRIPT_URL,
+            params={
+                "action": "confirmSubmission",
+                "rowNum": str(row_num),
+                "status": status_to_set,
+                "source": "pipeline-test",
+            },
+            timeout=30,
+        )
+        result = r.json()
+    except Exception as e:
+        print(f"  ❌ Request failed: {e}")
+        return False
+
+    if result.get("success"):
+        prev = result.get("previous", "")
+        print(f"  ✅ confirmSubmission: row={row_num}")
+        print(f"       previous: '{prev}'")
+        print(f"       updated:  '{result.get('status', '')}'")
+        return True
+    else:
+        print(f"  ❌ confirmSubmission failed: {result.get('error')}")
+        return False
+
+
 # ── CLI entry ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

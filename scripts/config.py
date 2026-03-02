@@ -10,8 +10,15 @@ APPS_SCRIPT_URL = f"https://script.google.com/macros/s/{PROD_DEPLOYMENT_ID}/exec
 SPREADSHEET_ID = "1VFSgcmNagnsAjXPsSDOgR9fadkjrbacK3beXCw2VG9Q"
 SPREADSHEET_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
 
-# Make.com webhook URL (leave empty to skip Make verification in pipeline)
+# Make.com Scenario B — called by GAS sendToMake() after PDF is created
+# Paste the Custom Webhook URL from Make here to enable end-to-end verification
 MAKE_WEBHOOK_URL = ""
+
+# Make.com Scenario A — called by GAS notifyNewEmployee_() to invite a new employee
+MAKE_INVITE_WEBHOOK_URL = ""
+
+# Public URL of the HTML form (GitHub Pages)
+FORM_PUBLIC_URL = "https://nisimbv.github.io/form-101/index_v6.html"
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

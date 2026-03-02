@@ -61,6 +61,27 @@ def step_verify() -> bool:
     return sheet_ok and pdf_ok
 
 
+def step_verify_confirm() -> bool:
+    """
+    Tests the doGet?action=confirmSubmission endpoint.
+    Simulates the callback that Make sends back to GAS after delivering the WhatsApp message.
+    In production Make calls this URL automatically; here we call it ourselves to verify
+    the endpoint works and the sheet status is updated correctly.
+    """
+    if not STATE_FILE.exists():
+        print("  ❌ No state file — run the test step first")
+        return False
+
+    state = json.loads(STATE_FILE.read_text())
+    row_num = state.get("rowNum")
+    if not row_num:
+        print("  ❌ rowNum missing from state")
+        return False
+
+    from scripts.verify import verify_confirm_submission
+    return verify_confirm_submission(int(row_num))
+
+
 def step_verify_make() -> bool:
     from scripts.config import MAKE_WEBHOOK_URL
     print("\n[VERIFY MAKE]")
@@ -112,6 +133,7 @@ def main() -> None:
         steps.append(("Fill & submit form (Playwright)", lambda: step_test(headless)))
 
     steps.append(("Verify Sheet + PDF", step_verify))
+    steps.append(("Test confirmSubmission callback", step_verify_confirm))
 
     if not no_make:
         steps.append(("Verify Make webhook", step_verify_make))

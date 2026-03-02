@@ -31,8 +31,14 @@ const CONFIG = {
   // תיקיית אב ב-Drive לשמירת PDFs
   MAIN_FOLDER: 'HR_101',
 
-  // Webhook של Make (אופציונלי)
+  // Webhook של Make — Scenario B: אישור קבלת טופס (נקרא לאחר יצירת PDF)
   MAKE_WEBHOOK_URL: '',
+
+  // Webhook של Make — Scenario A: שליחת הזמנה לעובד חדש
+  MAKE_INVITE_WEBHOOK_URL: '',
+
+  // כתובת הטופס הציבורית (GitHub Pages)
+  FORM_PUBLIC_URL: 'https://nisimbv.github.io/form-101/index_v6.html',
 
   // פרטי HR להודעות (אופציונלי)
   HR_PHONE: '',
@@ -90,6 +96,50 @@ function doGet(e) {
       const deleted = deleteTestRows();
       out.setContent(JSON.stringify({ success: true, deleted }));
     } catch(err) {
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    }
+    return out;
+  }
+
+  // ── Callback מ-Make לאחר שליחת WhatsApp — מעדכן סטטוס בגיליון ────────────
+  // קריאה: GET /exec?action=confirmSubmission&rowNum=24&status=✅+אושר&source=make
+  if (action === 'confirmSubmission') {
+    try {
+      const rowNum  = parseInt(safeString(e.parameter.rowNum) || '0', 10);
+      const status  = safeString(e.parameter.status) || '✅ אושר על ידי HR';
+      const source  = safeString(e.parameter.source) || 'make';
+      if (!rowNum) throw new Error('rowNum נדרש');
+
+      const ss    = getSpreadsheet_();
+      const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+      if (!sheet) throw new Error('גיליון לא נמצא');
+
+      const prev = String(sheet.getRange(rowNum, 39).getValue());
+      sheet.getRange(rowNum, 39).setValue(status);
+      Logger.log(`confirmSubmission: row=${rowNum} "${prev}" → "${status}" (source=${source})`);
+      out.setContent(JSON.stringify({ success: true, rowNum, status, previous: prev }));
+    } catch(err) {
+      Logger.log('confirmSubmission ERROR: ' + String(err));
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    }
+    return out;
+  }
+
+  // ── שליחת הזמנה לעובד חדש — HR קורא לנקודת קצה זו, GAS שולח ל-Make ────────
+  // קריאה: GET /exec?action=notifyEmployee&rowNum=24&name=...&phone=...&employer=...&taxYear=2026
+  if (action === 'notifyEmployee') {
+    try {
+      const rowNum   = parseInt(safeString(e.parameter.rowNum) || '0', 10);
+      const name     = safeString(e.parameter.name);
+      const phone    = normalizePhone_(safeString(e.parameter.phone));
+      const employer = safeString(e.parameter.employer);
+      const taxYear  = safeString(e.parameter.taxYear) || String(new Date().getFullYear());
+      if (!phone) throw new Error('phone נדרש');
+
+      notifyNewEmployee_(rowNum, name, phone, employer, taxYear);
+      out.setContent(JSON.stringify({ success: true, sent: true, to: phone }));
+    } catch(err) {
+      Logger.log('notifyEmployee ERROR: ' + String(err));
       out.setContent(JSON.stringify({ success: false, error: String(err) }));
     }
     return out;
@@ -912,16 +962,126 @@ function sendToMake(data, pdfFile, rowNum) {
 
   };
 
+  const MAX_ATTEMPTS = 3;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      Logger.log(`sendToMake: attempt ${attempt}/${MAX_ATTEMPTS} row=${rowNum}`);
+      const resp = UrlFetchApp.fetch(CONFIG.MAKE_WEBHOOK_URL, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true,
+        followRedirects: true,
+      });
+      const code = resp.getResponseCode();
+      const body = resp.getContentText().slice(0, 200);
+      Logger.log(`sendToMake: status=${code} body=${body}`);
+
+      if (code >= 200 && code < 300) {
+        updateMakeStatus_(rowNum, '✅ הושלם · נשלח ל-Make');
+        return;  // success
+      }
+      lastError = `HTTP ${code}: ${body}`;
+    } catch(err) {
+      lastError = String(err);
+      Logger.log(`sendToMake attempt ${attempt} exception: ${lastError}`);
+    }
+    if (attempt < MAX_ATTEMPTS) Utilities.sleep(2000 * attempt);
+  }
+
+  Logger.log(`sendToMake FAILED after ${MAX_ATTEMPTS} attempts: ${lastError}`);
+  logError_('sendToMake', lastError, rowNum);
+  // Status stays "✅ הושלם" — form itself succeeded, only Make delivery failed
+}
+
+
+/* ==============================
+   Make Utilities
+============================== */
+
+/**
+ * Write status to col 39 (סטטוס) for a given row. Silently swallowed on error.
+ */
+function updateMakeStatus_(rowNum, status) {
+  if (!rowNum) return;
   try {
-    const resp = UrlFetchApp.fetch(CONFIG.MAKE_WEBHOOK_URL, {
+    const ss    = getSpreadsheet_();
+    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    if (sheet) sheet.getRange(rowNum, 39).setValue(status);
+  } catch(e) {
+    Logger.log('updateMakeStatus_ error: ' + String(e));
+  }
+}
+
+/**
+ * Append an error row to the "שגיאות" sheet tab.
+ * Creates the tab (with header) if it does not exist yet.
+ */
+function logError_(functionName, errorMsg, rowNum) {
+  try {
+    const ss       = getSpreadsheet_();
+    let errSheet   = ss.getSheetByName('שגיאות');
+    if (!errSheet) {
+      errSheet = ss.insertSheet('שגיאות');
+      const hdr = errSheet.getRange(1, 1, 1, 4);
+      hdr.setValues([['תאריך', 'פונקציה', 'שורה בגיליון', 'שגיאה']]);
+      hdr.setBackground('#c00000').setFontColor('white').setFontWeight('bold');
+    }
+    errSheet.appendRow([
+      Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss'),
+      functionName,
+      rowNum || '',
+      errorMsg || '',
+    ]);
+  } catch(e) {
+    Logger.log('logError_ itself failed: ' + String(e));
+  }
+}
+
+/**
+ * שולח Webhook ל-Make (Scenario A) כדי להזמין עובד חדש למלא טופס 101.
+ * Make שולח הודעת WhatsApp עם לינק לטופס.
+ *
+ * @param {number} rowNum    - מספר שורה בגיליון (אם קיים, מעדכן סטטוס)
+ * @param {string} name      - שם העובד
+ * @param {string} phone     - טלפון נייד מנורמל (0XXXXXXXXX)
+ * @param {string} employer  - שם המעסיק
+ * @param {string} taxYear   - שנת המס
+ */
+function notifyNewEmployee_(rowNum, name, phone, employer, taxYear) {
+  const inviteUrl = CONFIG.MAKE_INVITE_WEBHOOK_URL;
+  if (!inviteUrl || !String(inviteUrl).trim()) {
+    Logger.log('notifyNewEmployee_: MAKE_INVITE_WEBHOOK_URL not configured — skipped');
+    return;
+  }
+
+  const payload = {
+    action:   'invite',
+    sentAt:   new Date().toISOString(),
+    rowNum:   rowNum || null,
+    employee: { name, phone },
+    employer,
+    taxYear,
+    formUrl:  CONFIG.FORM_PUBLIC_URL || '',
+  };
+
+  try {
+    const resp = UrlFetchApp.fetch(inviteUrl, {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(payload),
       muteHttpExceptions: true,
     });
-    Logger.log('MAKE webhook: status=' + resp.getResponseCode());
-  } catch (e) {
-    Logger.log('MAKE webhook error: ' + e);
+    const code = resp.getResponseCode();
+    Logger.log(`notifyNewEmployee_: Make invite status=${code} row=${rowNum} phone=${phone}`);
+    if (rowNum && code >= 200 && code < 300) {
+      updateMakeStatus_(rowNum, '📨 הזמנה נשלחה');
+    }
+  } catch(err) {
+    Logger.log('notifyNewEmployee_ error: ' + String(err));
+    logError_('notifyNewEmployee_', String(err), rowNum);
   }
 }
 
