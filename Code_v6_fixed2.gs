@@ -76,8 +76,121 @@ function doGet(e) {
     return out;
   }
 
+  if (action === 'listTestRows') {
+    try {
+      out.setContent(JSON.stringify({ success: true, rows: findTestRows_() }));
+    } catch(err) {
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    }
+    return out;
+  }
+
   out.setContent(JSON.stringify({ status: 'ok', service: 'form-101', version: '6.0' }));
   return out;
+}
+
+/* ==============================
+   Cleanup — Test Rows
+============================== */
+
+const TEST_ID_NUMBERS = ['123456789'];  // ת"ז של שורות בדיקה אוטומטיות
+
+/**
+ * Returns an array of { rowNum, name, id, date } for every test row.
+ * A "test row" is one whose מספר זהות matches TEST_ID_NUMBERS.
+ */
+function findTestRows_() {
+  const ss = getSpreadsheet_();
+  const sh = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sh || sh.getLastRow() < 2) return [];
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const idCol   = headers.indexOf('מספר זהות') + 1;   // 1-based
+  const nameCol = headers.indexOf('שם משפחה')  + 1;
+  const firstCol= headers.indexOf('שם פרטי')   + 1;
+  const dateCol = headers.indexOf('תאריך הגשה') + 1;
+  if (idCol === 0) return [];
+
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+  const results = [];
+  data.forEach((row, i) => {
+    const id = String(row[idCol - 1]).trim();
+    if (TEST_ID_NUMBERS.includes(id)) {
+      results.push({
+        rowNum: i + 2,
+        id,
+        name: `${row[nameCol - 1]} ${row[firstCol - 1]}`.trim(),
+        date: safeString(row[dateCol - 1]),
+      });
+    }
+  });
+  return results;
+}
+
+/**
+ * Deletes all test rows from the sheet (bottom-up to keep row numbers stable).
+ * Returns the number of rows deleted.
+ */
+function deleteTestRows() {
+  const ss = getSpreadsheet_();
+  const sh = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sh) return 0;
+
+  const testRows = findTestRows_();
+  // Delete bottom-up so row indices don't shift
+  testRows.slice().reverse().forEach(r => sh.deleteRow(r.rowNum));
+  Logger.log(`deleteTestRows: removed ${testRows.length} rows`);
+  return testRows.length;
+}
+
+/**
+ * Weekly trigger function — sends a reminder email (if HR_EMAIL is set)
+ * listing all test rows still present in the sheet.
+ * Install once via installCleanupReminder().
+ */
+function weeklyCleanupReminder() {
+  const testRows = findTestRows_();
+  if (testRows.length === 0) return;  // nothing to report
+
+  const body = [
+    `שלום,`,
+    ``,
+    `נמצאו ${testRows.length} שורות בדיקה בגיליון "${CONFIG.SHEET_NAME}":`,
+    ``,
+    ...testRows.map(r => `  • שורה ${r.rowNum} — ${r.name} (ת"ז: ${r.id}) — ${r.date}`),
+    ``,
+    `ניתן למחוק אותן ידנית מהגיליון, או להריץ את deleteTestRows() ב-Apps Script.`,
+  ].join('\n');
+
+  if (CONFIG.HR_EMAIL && String(CONFIG.HR_EMAIL).trim()) {
+    MailApp.sendEmail({
+      to: CONFIG.HR_EMAIL,
+      subject: `[טופס 101] תזכורת: ${testRows.length} שורות בדיקה בגיליון`,
+      body,
+    });
+    Logger.log('weeklyCleanupReminder: email sent to ' + CONFIG.HR_EMAIL);
+  } else {
+    Logger.log('weeklyCleanupReminder: ' + body);
+  }
+}
+
+/**
+ * Run ONCE manually from the Apps Script editor to create the weekly trigger.
+ * Subsequent runs are automatic (every Monday at 09:00 IL time).
+ */
+function installCleanupReminder() {
+  // Remove any existing trigger with the same function name to avoid duplicates
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'weeklyCleanupReminder')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+
+  ScriptApp.newTrigger('weeklyCleanupReminder')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(9)
+    .create();
+
+  Logger.log('installCleanupReminder: weekly trigger created (Monday 09:00)');
 }
 
 function doPost(e) {
