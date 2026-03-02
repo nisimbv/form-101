@@ -85,6 +85,16 @@ function doGet(e) {
     return out;
   }
 
+  if (action === 'deleteTestRows') {
+    try {
+      const deleted = deleteTestRows();
+      out.setContent(JSON.stringify({ success: true, deleted }));
+    } catch(err) {
+      out.setContent(JSON.stringify({ success: false, error: String(err) }));
+    }
+    return out;
+  }
+
   out.setContent(JSON.stringify({ status: 'ok', service: 'form-101', version: '6.0' }));
   return out;
 }
