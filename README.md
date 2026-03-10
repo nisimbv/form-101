@@ -89,6 +89,18 @@ Google Apps Script Web App (/exec)
 | `scripts/patch_make_scenario_b.py` | תיקון Router של Scenario B דרך Make API |
 | `run_pipeline.bat` | קיצור דרך ל-Windows |
 
+### מיפוי שדות ומילוי PDF ישיר (NEW 3)
+
+| קובץ | תפקיד |
+|---|---|
+| `NEW 3/form_101_mapping_1772880459281.json` | מיפוי 130 שדות — קואורדינטות ב-PDF points, `bindKey` לכל שדה |
+| `NEW 3/101LAST.pdf` | טופס הרשמי המקורי — מקור הרקע |
+| `NEW 3/page1_bg.b64` / `page2_bg.b64` | רקע JPEG מקודד base64 (נוצר אוטומטית ע"י הגנרטור) |
+| `NEW 3/filled_form_test.pdf` | **פלט** — טופס ממולא עם נתוני בדיקה (נוצר ע"י `fill_form_from_json.py`) |
+| `scripts/generate_template_new3.py` | מגנרט את `PDFTemplate_v6.html` מה-JSON |
+| `scripts/fill_form_from_json.py` | **ממלא PDF ישירות** עם reportlab — לבדיקת מיקומים ויזואלית |
+| `scripts/test_template_new3.py` | מרנדר את תבנית ה-HTML → PDF דרך Playwright |
+
 ### תיעוד
 
 | קובץ | תוכן |
@@ -200,10 +212,37 @@ GAS מרנדר HTML לתוך PDF. הרקע הוא JPEG סרוק של הטופס 
 | אין flexbox / grid | פריסה ע"י `position:absolute` בלבד |
 | אין CSS variables | ערכים ישירים בכל שדה |
 
-### מיקומים (מיקור אמת: `scripts/field_positions.json`)
+### מיקורי אמת — NEW 3 (מעודכן 2026-03-08)
 
-כל המיקומים חולצו מה-PDF הרשמי המקורי (`form101_REAL_ORIGINAL_FILLED.pdf`) עם PyMuPDF וכוילו ל-A4 (210×297mm).
-סקייל: `210 / 900.2` (ממרחב הסריקה ל-mm).
+מקור הסמכות הנוכחי הוא `NEW 3/form_101_mapping_1772880459281.json`:
+
+```
+130 שדות (81 עמוד 1 + 49 עמוד 2)
+קואורדינטות: PDF points (595.275 × 841.89)
+y: origin = פינת שמאל-עליון (top-origin)
+```
+
+#### שיטת ה-coordinates
+
+| שימוש | נוסחה |
+|---|---|
+| **reportlab** (fill_form_from_json.py) | `y_rl = pdf_height - json_y - json_h` |
+| **HTML template** (generate_template_new3.py) | `x_mm = x × 0.352778`, `top_mm = y × 0.352778` |
+
+#### מילוי PDF ישיר (reportlab)
+
+```bash
+pip install reportlab python-bidi
+python scripts/fill_form_from_json.py
+# → NEW 3/filled_form_test.pdf
+```
+
+הסקריפט:
+1. קורא `form_101_mapping_1772880459281.json`
+2. מחשב `y = pdf_height - field.y - field.h` לכל שדה
+3. מצייר טקסט (`drawRightString`) וסימונים (`✓`) בכחול `#1f5fe0`
+4. ממזג overlay עם `101LAST.pdf` דרך PyPDF2
+5. ממיר עברית ל-RTL נכון עם `python-bidi`
 
 ---
 
@@ -269,7 +308,12 @@ const CONFIG = {
 
 - Google Workspace (Sheets + Drive + Apps Script)
 - Node.js + `npm install -g @google/clasp`
-- Python 3.11+ עם: `playwright pdfplumber requests google-auth anthropic pymupdf`
+- Python 3.11+ עם:
+  ```bash
+  pip install playwright pdfplumber requests google-auth anthropic pymupdf
+  pip install reportlab python-bidi PyPDF2
+  playwright install chromium
+  ```
 - חשבון Make.com עם WhatsApp Business Cloud connection
 
 ### Backend
@@ -303,15 +347,16 @@ clasp deploy --description "v6"
 
 ## בדיקות ותוצאות
 
-### תוצאות אחרונות (2026-03-02)
+### תוצאות אחרונות
 
-| בדיקה | תוצאה |
-|---|---|
-| Pipeline בסיסי (9 שדות טקסט + 10 סימונים) | ✅ 100% |
-| Pipeline כולל (14 שדות טקסט + 18 סימונים) | ✅ 100% |
-| 7 תרחישי קצה (edge cases) | ✅ 7/7 |
-| E2E מלא: GAS → Make → WhatsApp → confirmSubmission | ✅ |
-| Make webhook reachable | ✅ 200 OK |
+| בדיקה | תאריך | תוצאה |
+|---|---|---|
+| Pipeline בסיסי (9 שדות טקסט + 10 סימונים) | 2026-03-06 | ✅ 100% |
+| Pipeline כולל (14 שדות טקסט + 18 סימונים) | 2026-03-06 | ✅ 100% |
+| 7 תרחישי קצה (edge cases) | 2026-03-06 | ✅ 7/7 |
+| E2E מלא: GAS → Make → WhatsApp → confirmSubmission | 2026-03-06 | ✅ |
+| מילוי PDF ישיר (fill_form_from_json.py) — כל 130 שדות | 2026-03-08 | ✅ 100% |
+| בדיקה ויזואלית NEW 3 — מיקומים מדויקים | 2026-03-08 | ✅ |
 
 ### תרחישי הקצה שנבדקו
 
@@ -346,30 +391,37 @@ clasp deploy --description "v6"
 
 ```
 form101_v6_files/
-├── index_v6.html              ← טופס הקצה
-├── Code_v6_fixed2.gs          ← GAS backend
-├── PDFTemplate_v6.html        ← תבנית PDF
+├── index_v6.html                    ← טופס הקצה
+├── Code_v6_fixed2.gs                ← GAS backend (מקומי)
+├── PDFTemplate_v6.html              ← תבנית PDF (מקומי)
 ├── src/
-│   ├── Code.gs                ← clasp sync
-│   └── PDFTemplate.html
+│   ├── Code.gs                      ← clasp sync → Apps Script
+│   └── PDFTemplate.html             ← clasp sync → Apps Script
+├── NEW 3/
+│   ├── 101LAST.pdf                  ← טופס מקורי (מקור רקע)
+│   ├── form_101_mapping_*.json      ← 130 שדות + קואורדינטות (מקור אמת)
+│   ├── page1_bg.b64 / page2_bg.b64 ← רקע JPEG base64
+│   └── filled_form_test.pdf         ← פלט בדיקה (נוצר ע"י fill_form_from_json.py)
 ├── make/
-│   ├── scenario_a_invite.json
-│   └── scenario_b_submitted.json
+│   ├── scenario_a_invite.json       ← Blueprint הזמנת עובד
+│   └── scenario_b_submitted.json    ← Blueprint עיבוד טופס
 ├── scripts/
-│   ├── config.py              ← נתוני בדיקה + URLs + מיקומי שדות
-│   ├── pipeline.py            ← מנהל ה-pipeline
-│   ├── deploy.py
-│   ├── test_form.py           ← Playwright E2E
-│   ├── verify.py              ← Sheet + PDF verification
-│   ├── test_pdf_direct.py     ← POST ישיר ל-GAS
-│   ├── validate_claude.py     ← Claude Vision QA
-│   ├── test_edge_cases.py     ← 7 edge cases
-│   ├── patch_make_scenario_b.py ← תיקון Router דרך API
-│   └── field_positions.json   ← מיקורי אמת של שדות
-├── MAKE_SETUP.md              ← הוראות Make.com
-├── CLAUDE.md                  ← הנחיות לעבודה עם Claude Code
-├── run_pipeline.bat           ← קיצור דרך Windows
-└── README.md                  ← מסמך זה
+│   ├── config.py                    ← נתוני בדיקה + URLs
+│   ├── pipeline.py                  ← מנהל ה-pipeline
+│   ├── deploy.py                    ← clasp push + deploy
+│   ├── test_form.py                 ← Playwright E2E
+│   ├── verify.py                    ← Sheet + PDF verification
+│   ├── test_pdf_direct.py           ← POST ישיר ל-GAS
+│   ├── validate_claude.py           ← Claude Vision QA
+│   ├── test_edge_cases.py           ← 7 edge cases
+│   ├── generate_template_new3.py    ← מגנרט PDFTemplate_v6.html מה-JSON
+│   ├── fill_form_from_json.py       ← ממלא PDF ישירות (reportlab + bidi)
+│   ├── test_template_new3.py        ← Playwright render של התבנית
+│   └── field_positions.json         ← מיקורי שדות (legacy)
+├── MAKE_SETUP.md                    ← הוראות Make.com
+├── CLAUDE.md                        ← הנחיות לעבודה עם Claude Code
+├── run_pipeline.bat                 ← קיצור דרך Windows
+└── README.md                        ← מסמך זה
 ```
 
 ---

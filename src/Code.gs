@@ -277,17 +277,30 @@ function doPost(e) {
       throw new Error('בקשה ריקה / חסר גוף POST');
     }
 
-    const raw = JSON.parse(e.postData.contents);
-    const data = normalizePayload(raw);
+    const data = JSON.parse(e.postData.contents);
+    // Payload arrives with bindKey names directly — no normalizePayload() needed
+    data['children']     = Array.isArray(data['children'])     ? data['children']     : [];
+    data['other_income'] = Array.isArray(data['other_income']) ? data['other_income'] : [];
+    data['changes']      = Array.isArray(data['changes'])      ? data['changes']      : [];
+    if (!data['_op.submitted_at']) data['_op.submitted_at'] = new Date().toISOString();
 
-    // 1) שמירה ל-Sheet
+    // 1) שמירה ל-Sheet (Hebrew legacy tab)
     const rowNum = saveToSheet(data);
 
     // 2) יצירת PDF
     const pdfFile = createPDF(data);
 
-    // 3) עדכון שורה עם פרטי PDF
+    // 3) עדכון שורה עם פרטי PDF (legacy tab)
     updateSheetAfterPdf(rowNum, pdfFile);
+
+    // 3b) שמירה ל-Form101_NEW3_FF (Full-Fidelity, bindKey columns)
+    try {
+      const ffRow = saveToSheetFF_(data, null);
+      updateSheetFFAfterPdf_(ffRow, pdfFile);
+      Logger.log('FF tab row=' + ffRow);
+    } catch (ffErr) {
+      Logger.log('FF tab error (non-fatal): ' + String(ffErr));
+    }
 
     // 4) Webhook ל-Make (אם הוגדר)
     sendToMake(data, pdfFile, rowNum);
@@ -313,172 +326,88 @@ function doPost(e) {
 }
 
 /* ==============================
-   Normalization
+   Summary Builders (legacy Hebrew sheet columns)
+   Read from bindKey-named payload fields.
 ============================== */
 
-function normalizePayload(raw) {
-  const data = raw || {};
-  data.submitted_at = data.submitted_at || new Date().toISOString();
-  data.taxYear = safeString(data.taxYear) || String(new Date().getFullYear());
-
-  // Arrays
-  data.children = Array.isArray(data.children) ? data.children : extractChildrenFromFlatFields(data);
-  data.additional_incomes = Array.isArray(data.additional_incomes) ? data.additional_incomes : extractAdditionalIncomesFromFlatFields(data);
-  data.changes = Array.isArray(data.changes) ? data.changes : extractChangesFromFlatFields(data);
-
-  // Booleans from checkboxes
-  const boolKeys = [
-    'income_type_monthly','income_type_additional','income_type_partial','income_type_daily','income_type_pension','income_type_scholarship',
-    'has_other_income','other_income_monthly','other_income_additional','other_income_partial','other_income_daily','other_income_pension','other_income_scholarship',
-    'no_study_fund_other','no_pension_other',
-    'has_spouse',
-    'has_tax_coordination','tax_coordination_approved',
-    'confirm_declaration',
-    // reliefs (דוגמאות – אם קיימים בטופס)
-    'relief_1_resident','relief_2_disabled','relief_2_1_allowance','relief_3_settlement','relief_4_new_immigrant','relief_5_spouse','relief_6_single_parent',
-    'relief_7_children_custody','relief_8_children_general','relief_9_sole_parent','relief_10_children_not_custody','relief_11_disabled_children',
-    'relief_12_alimony','relief_13_age_16_18','relief_14_discharged_soldier','relief_15_academic','relief_16_reserve','relief_17_no_income',
-    'relief_wants','relief_has_other',
-  ];
-  boolKeys.forEach(k => { if (k in data) data[k] = toBoolean(data[k]); });
-
-  // text radios/selects: keep as string (NOT booleans)
-  ['gender','marital_status','israeli_resident','kibbutz_member','health_fund','spouse_has_income'].forEach(k => { if (k in data) data[k] = safeString(data[k]); });
-
-  // Normalize phone numbers to IL format (0XXXXXXXXX)
-  ['mobile_phone','employer_phone'].forEach(k => { if (k in data) data[k] = normalizePhone_(data[k]); });
-
-  // Build summaries for PDF overlay (פשוט, כדי לעבוד מייד; אפשר לשדרג לסימון checkbox מדויק אחרי כיול)
-  data.summary_income_types = buildIncomeTypesSummary(data);
-  data.summary_other_income = buildOtherIncomeSummary(data);
-  data.summary_spouse = buildSpouseSummary(data);
-  data.summary_reliefs = buildReliefsSummary(data);
-  data.summary_tax_coordination = buildTaxCoordinationSummary(data);
-
-  return data;
-}
-
 function buildIncomeTypesSummary(d) {
+  const b = k => !!d[k];
   const a = [];
-  if (d.income_type_monthly) a.push('משכורת חודשית');
-  if (d.income_type_additional) a.push('משכורת נוספת');
-  if (d.income_type_partial) a.push('משכורת חלקית');
-  if (d.income_type_daily) a.push('שכר עבודה (יומי/שבועי)');
-  if (d.income_type_pension) a.push('קצבה');
-  if (d.income_type_scholarship) a.push('מלגה');
+  if (b('income.main.monthly_salary')) a.push('משכורת חודשית');
+  if (b('income.main.additional_job')) a.push('משכורת נוספת');
+  if (b('income.main.partial_salary')) a.push('משכורת חלקית');
+  if (b('income.main.daily_worker'))   a.push('שכר עבודה (יומי/שבועי)');
+  if (b('income.main.pension'))        a.push('קצבה');
+  if (b('income.main.scholarship'))    a.push('מלגה');
   return a.length ? ('סוגי הכנסה ממעסיק זה: ' + a.join(', ')) : '';
 }
 
 function buildOtherIncomeSummary(d) {
-  if (!d.has_other_income) return 'אין הכנסות אחרות (לפי הצהרה)';
+  const b  = k => !!d[k];
+  const oi = d['other_income'] || [];
+  if (b('income.other.none')) return 'אין הכנסות אחרות (לפי הצהרה)';
   const a = [];
-  if (d.other_income_monthly) a.push('משכורת חודשית');
-  if (d.other_income_additional) a.push('משכורת נוספת');
-  if (d.other_income_partial) a.push('משכורת חלקית');
-  if (d.other_income_daily) a.push('שכר עבודה (יומי/שבועי)');
-  if (d.other_income_pension) a.push('קצבה');
-  if (d.other_income_scholarship) a.push('מלגה');
-  const parts = [];
-  parts.push('יש הכנסות אחרות: ' + (a.length ? a.join(', ') : 'כן'));
-  if (Array.isArray(d.additional_incomes) && d.additional_incomes.length) {
-    const txt = d.additional_incomes
-      .map(x => `${safeString(x.employer)||''} ₪${safeString(x.amount)||''} (מס:${safeString(x.tax)||''})`)
-      .filter(Boolean)
-      .join(' | ');
+  if (b('income.other.monthly_salary')) a.push('משכורת חודשית');
+  if (b('income.other.additional_job')) a.push('משכורת נוספת');
+  if (b('income.other.partial_salary')) a.push('משכורת חלקית');
+  if (b('income.other.daily_worker'))   a.push('שכר עבודה (יומי/שבועי)');
+  if (b('income.other.pension'))        a.push('קצבה');
+  if (b('income.other.scholarship'))    a.push('מלגה');
+  const parts = ['יש הכנסות אחרות: ' + (a.length ? a.join(', ') : 'כן')];
+  if (oi.length) {
+    const txt = oi
+      .map(x => `${safeString(x.payer_name)||''} ₪${safeString(x.monthly_amount)||''} (מס:${safeString(x.tax_withheld)||''})`)
+      .filter(Boolean).join(' | ');
     if (txt) parts.push('פירוט מעסיקים נוספים: ' + txt);
   }
-  if (d.no_study_fund_other) parts.push('ללא קרן השתלמות במקום אחר');
-  if (d.no_pension_other) parts.push('ללא קופת גמל/פנסיה במקום אחר');
+  if (b('income.other.no_training_fund')) parts.push('ללא קרן השתלמות במקום אחר');
+  if (b('income.other.no_pension'))        parts.push('ללא קופת גמל/פנסיה במקום אחר');
   return parts.join(' · ');
 }
 
 function buildSpouseSummary(d) {
-  if (!d.has_spouse) return '';
+  const sd = k => safeString(d[k]);
+  const hasSpouse = !!(sd('spouse.last_name') || sd('spouse.id'));
+  if (!hasSpouse) return '';
   const parts = [];
-  parts.push(`בן/בת זוג: ${safeString(d.spouse_last_name)||''} ${safeString(d.spouse_first_name)||''}`.trim());
-  const idp = safeString(d.spouse_id_number) || safeString(d.spouse_passport_number);
+  parts.push(('בן/בת זוג: ' + sd('spouse.last_name') + ' ' + sd('spouse.first_name')).trim());
+  const idp = sd('spouse.id') || sd('spouse.passport');
   if (idp) parts.push('ת"ז/דרכון: ' + idp);
-  if (d.spouse_birth_date) parts.push('ת. לידה: ' + safeString(d.spouse_birth_date));
-  if (d.spouse_aliya_date) parts.push('ת. עליה: ' + safeString(d.spouse_aliya_date));
-  parts.push('יש לבן/בת הזוג הכנסה: ' + (d.spouse_has_income ? 'כן' : 'לא'));
+  if (sd('spouse.birth_date'))        parts.push('ת. לידה: ' + sd('spouse.birth_date'));
+  if (sd('spouse.immigration_date'))  parts.push('ת. עליה: ' + sd('spouse.immigration_date'));
+  parts.push('יש לבן/בת הזוג הכנסה: ' + (!!d['spouse.has_income.yes'] ? 'כן' : 'לא'));
   return parts.join(' · ');
 }
 
 function buildReliefsSummary(d) {
+  const b = k => !!d[k];
   const items = [];
-  if (d.relief_1_resident) items.push('1. תושב/ת ישראל');
-  if (d.relief_2_disabled) items.push('2. נכות');
-  if (d.relief_2_1_allowance) items.push('2.1 מקבל/ת קצבה');
-  if (d.relief_3_settlement) items.push('3. יישוב מזכה');
-  if (d.relief_4_new_immigrant) items.push('4. עולה חדש/ה / תושב/ת חוזר/ת');
-  if (d.relief_5_spouse) items.push('5. בן/בת זוג ללא הכנסה / נכה');
-  if (d.relief_6_single_parent) items.push('6. הורה יחיד');
-  if (d.relief_7_children_custody) items.push('7. ילדים בחזקתי');
-  if (d.relief_8_children_general) items.push('8. ילדים');
-  if (d.relief_9_sole_parent) items.push('9. הורה עצמאי/ת');
-  if (d.relief_10_children_not_custody) items.push('10. ילדים לא בחזקתי');
-  if (d.relief_11_disabled_children) items.push('11. ילד נכה');
-  if (d.relief_12_alimony) items.push('12. מזונות');
-  if (d.relief_13_age_16_18) items.push('13. ילדים בגיל 16–18');
-  if (d.relief_14_discharged_soldier) items.push('14. חייל משוחרר/ת');
-  if (d.relief_15_academic) items.push('15. השכלה אקדמית');
-  if (d.relief_16_reserve) items.push('16. שירות מילואים');
-  if (d.relief_17_no_income) items.push('17. אין הכנסה');
+  if (b('credits.1_israeli_resident'))                     items.push('1. תושב/ת ישראל');
+  if (b('credits.2a_disability_100_or_blind'))             items.push('2. נכות');
+  if (b('credits.2b_monthly_benefit'))                     items.push('2.1 מקבל/ת קצבה');
+  if (b('credits.3_eligible_locality'))                    items.push('3. יישוב מזכה');
+  if (b('credits.4_new_immigrant'))                        items.push('4. עולה חדש/ה');
+  if (b('credits.5_spouse_no_income'))                     items.push('5. בן/בת זוג ללא הכנסה');
+  if (b('credits.6_single_parent_family'))                 items.push('6. הורה יחיד');
+  if (b('credits.7_children_in_custody'))                  items.push('7. ילדים בחזקתי');
+  if (b('credits.8_children_not_in_custody'))              items.push('8. ילדים');
+  if (b('credits.9_single_parent'))                        items.push('9. הורה עצמאי/ת');
+  if (b('credits.10_children_not_in_custody_maintenance')) items.push('10. ילדים לא בחזקתי');
+  if (b('credits.11_disabled_child'))                      items.push('11. ילד נכה');
+  if (b('credits.12_spousal_support'))                     items.push('12. מזונות');
+  if (b('credits.13_age_16_18'))                           items.push('13. ילדים בגיל 16–18');
+  if (b('credits.14_released_soldier_or_service'))         items.push('14. חייל משוחרר/ת');
+  if (b('credits.15_graduation'))                          items.push('15. השכלה אקדמית');
+  if (b('credits.16_reserve_combat'))                      items.push('16. שירות מילואים');
+  if (b('tax_coordination.no_income_until_start'))         items.push('17. אין הכנסה');
   return items.length ? ('בקשות להקלות מס: ' + items.join(' · ')) : '';
 }
 
 function buildTaxCoordinationSummary(d) {
-  if (!d.has_tax_coordination) return '';
-  const parts = [];
-  parts.push('תיאום מס: כן');
-  if (d.tax_coordination_approved) parts.push('אישור פקיד שומה: כן');
-  // אם קיימים שדות flat של טבלת תיאום מס (tax_coord_1_*), אפשר להוסיף כאן פירוט בעתיד
+  if (!d['tax_coordination.has_additional_income']) return '';
+  const parts = ['תיאום מס: כן'];
+  if (d['tax_coordination.approval_attached']) parts.push('אישור פקיד שומה: כן');
   return parts.join(' · ');
-}
-
-function extractChildrenFromFlatFields(data) {
-  const results = [];
-  for (let i = 1; i <= 10; i++) {
-    const child = {
-      name: safeString(data[`child_${i}_name`]),
-      id: safeString(data[`child_${i}_id`]),
-      birth_date: safeString(data[`child_${i}_birth_date`]),
-      in_custody: toBoolean(data[`child_${i}_in_custody`]),
-      receives_allowance: toBoolean(data[`child_${i}_receives_allowance`]),
-    };
-    if (child.name || child.id || child.birth_date) results.push(child);
-  }
-  return results;
-}
-
-function extractAdditionalIncomesFromFlatFields(data) {
-  const results = [];
-  for (let i = 1; i <= 20; i++) {
-    const item = {
-      employer: safeString(data[`add_income_${i}_employer`]),
-      address: safeString(data[`add_income_${i}_address`]),
-      tax_id: safeString(data[`add_income_${i}_tax_id`]),
-      type: safeString(data[`add_income_${i}_type`]),
-      amount: safeString(data[`add_income_${i}_amount`]),
-      tax: safeString(data[`add_income_${i}_tax`]),
-    };
-    if (item.employer || item.amount || item.tax) results.push(item);
-  }
-  return results;
-}
-
-function extractChangesFromFlatFields(data) {
-  const results = [];
-  for (let i = 1; i <= 10; i++) {
-    const item = {
-      date: safeString(data[`change_${i}_date`]),
-      details: safeString(data[`change_${i}_details`]),
-      notification_date: safeString(data[`change_${i}_notification`]),
-      signature: safeString(data[`change_${i}_signature`]),
-    };
-    if (item.date || item.details || item.notification_date) results.push(item);
-  }
-  return results;
 }
 
 /* ==============================
@@ -576,101 +505,362 @@ function saveToSheet(data) {
   sheet.getRange(2, 5,  maxRow - 1, 1).setNumberFormat('@');
   sheet.getRange(2, 16, maxRow - 1, 1).setNumberFormat('@');
 
-    const row = [
+    // Derive display strings from boolean bindKeys
+  const d  = k => safeString(data[k]);
+  const b  = k => !!data[k];
+  const ch = data['children']     || [];
+  const oi = data['other_income'] || [];
+
+  const gender = b('employee.gender.male') ? 'זכר' : b('employee.gender.female') ? 'נקבה' : '';
+  const ms = b('employee.marital_status.married')   ? 'נשוי/אה' :
+             b('employee.marital_status.single')    ? 'רווק/ה'  :
+             b('employee.marital_status.divorced')  ? 'גרוש/ה'  :
+             b('employee.marital_status.widowed')   ? 'אלמן/ה'  :
+             b('employee.marital_status.separated') ? 'פרוד/ה'  : '';
+  const kibbutz   = b('employee.kibbutz_member.income_transferred') ? 'כן' :
+                    b('employee.kibbutz_member.no') ? 'לא' : '';
+  const hasSpouse = !!(d('spouse.last_name') || d('spouse.id'));
+
+  const mobilePhone   = normalizePhone_(d('employee.mobile'));
+  const employerPhone = normalizePhone_(d('employer.phone'));
+
+  const row = [
     // מטא מערכת
-    formatTimestamp_(data.submitted_at),      // 1:  תאריך הגשה
-    data.taxYear,                             // 2:  שנת מס
+    formatTimestamp_(data['_op.submitted_at']),       // 1:  תאריך הגשה
+    d('meta.tax_year'),                               // 2:  שנת מס
     // סעיף א׳ — פרטי המעסיק
-    safeString(data.employer_name),           // 3:  שם המעסיק
-    safeString(data.employer_tax_id),         // 4:  מספר תיק ניכויים
-    safeString(data.employer_phone),          // 5:  טלפון המעסיק
-    safeString(data.employer_address),        // 6:  כתובת המעסיק
-    safeString(data.start_date),              // 7:  תאריך תחילת עבודה
+    d('employer.name'),                               // 3:  שם המעסיק
+    d('employer.deductions_file'),                    // 4:  מספר תיק ניכויים
+    employerPhone,                                    // 5:  טלפון המעסיק
+    d('employer.address'),                            // 6:  כתובת המעסיק
+    d('employment.start_date'),                       // 7:  תאריך תחילת עבודה
     // סעיף ב׳ — פרטי העובד
-    safeString(data.last_name),               // 8:  שם משפחה
-    safeString(data.first_name),              // 9:  שם פרטי
-    safeString(data.id_number),               // 10: מספר זהות
-    safeString(data.passport_number),         // 11: מספר דרכון
-    safeString(data.birth_date),              // 12: תאריך לידה
-    safeString(data.aliya_date),              // 13: תאריך עלייה
-    safeString(data.address),                 // 14: כתובת עובד
-    safeString(data.postal_code),             // 15: מיקוד
-    safeString(data.mobile_phone),            // 16: טלפון נייד
-    safeString(data.email),                   // 17: אימייל
-    safeString(data.gender),                  // 18: מין
-    safeString(data.marital_status),          // 19: מצב משפחתי
-    safeString(data.israeli_resident),        // 20: תושב ישראל
-    safeString(data.kibbutz_member),          // 21: חבר קיבוץ/מושב שיתופי
-    safeString(data.health_fund),             // 22: קופת חולים
+    d('employee.last_name'),                          // 8:  שם משפחה
+    d('employee.first_name'),                         // 9:  שם פרטי
+    d('employee.id'),                                 // 10: מספר זהות
+    d('employee.passport'),                           // 11: מספר דרכון
+    d('employee.birth_date'),                         // 12: תאריך לידה
+    d('employee.immigration_date'),                   // 13: תאריך עלייה
+    d('employee.address.street'),                     // 14: כתובת עובד
+    d('employee.address.zip'),                        // 15: מיקוד
+    mobilePhone,                                      // 16: טלפון נייד
+    d('employee.email'),                              // 17: אימייל
+    gender,                                           // 18: מין
+    ms,                                               // 19: מצב משפחתי
+    b('employee.has_id.yes') ? 'כן' : 'לא',          // 20: תושב ישראל (has_id proxy)
+    kibbutz,                                          // 21: חבר קיבוץ/מושב שיתופי
+    d('employee.health_fund.name'),                   // 22: קופת חולים
     // סעיף ג׳ — ילדים
-    data.children.length,                     // 23: מספר ילדים
-    JSON.stringify(data.children),            // 24: ילדים (JSON)
+    ch.length,                                        // 23: מספר ילדים
+    JSON.stringify(ch),                               // 24: ילדים (JSON)
     // סעיף ד׳ — סוג ההכנסה
-    safeString(data.summary_income_types),    // 25: סוג הכנסה ממעסיק
+    buildIncomeTypesSummary(data),                    // 25: סוג הכנסה ממעסיק
     // סעיף ה׳ — הכנסות ממעסיקים אחרים
-    data.has_other_income ? 'כן' : 'לא',     // 26: יש הכנסות אחרות
-    data.additional_incomes.length,           // 27: מספר הכנסות נוספות
-    JSON.stringify(data.additional_incomes),  // 28: הכנסות נוספות (JSON)
-    data.no_study_fund_other ? 'כן' : 'לא', // 29: ללא קרן השתלמות אחרת
-    data.no_pension_other ? 'כן' : 'לא',    // 30: ללא פנסיה/גמל אחרת
+    !b('income.other.none') ? 'כן' : 'לא',          // 26: יש הכנסות אחרות
+    oi.length,                                        // 27: מספר הכנסות נוספות
+    JSON.stringify(oi),                               // 28: הכנסות נוספות (JSON)
+    b('income.other.no_training_fund') ? 'כן' : 'לא', // 29: ללא קרן השתלמות אחרת
+    b('income.other.no_pension') ? 'כן' : 'לא',     // 30: ללא פנסיה/גמל אחרת
     // סעיף ו׳ — בן/בת זוג
-    data.has_spouse ? 'כן' : 'לא',           // 31: יש בן/בת זוג
-    safeString(data.summary_spouse),          // 32: פרטי בן/בת זוג
+    hasSpouse ? 'כן' : 'לא',                         // 31: יש בן/בת זוג
+    buildSpouseSummary(data),                         // 32: פרטי בן/בת זוג
     // סעיף ח׳ — זכאויות
-    safeString(data.summary_reliefs),         // 33: זכאויות - סיכום
+    buildReliefsSummary(data),                        // 33: זכאויות - סיכום
     // סעיף ת׳ — תיאום מס
-    data.has_tax_coordination ? 'כן' : 'לא', // 34: יש תיאום מס
+    b('tax_coordination.has_additional_income') ? 'כן' : 'לא', // 34: יש תיאום מס
     // סעיף ז׳ — שינויים
-    JSON.stringify(data.changes),             // 35: שינויים במהלך השנה (JSON)
+    JSON.stringify(data['changes'] || []),            // 35: שינויים במהלך השנה (JSON)
     // הצהרה
-    safeString(data.declaration_date),        // 36: תאריך הצהרה
+    d('signature.date'),                              // 36: תאריך הצהרה
     // מערכת / PDF
-    '',                                       // 37: קישור PDF
-    '',                                       // 38: מזהה קובץ ב-Drive
-    'ממתין ל-PDF',                           // 39: סטטוס
+    '',                                               // 37: קישור PDF
+    '',                                               // 38: מזהה קובץ ב-Drive
+    'ממתין ל-PDF',                                   // 39: סטטוס
     // פנימי
-    JSON.stringify(buildSummary(data)),        // 40: סיכום
-    JSON.stringify(data),                     // 41: JSON מלא
+    JSON.stringify(buildSummary(data)),               // 40: סיכום
+    JSON.stringify(data),                             // 41: JSON מלא
   ];
 
   sheet.appendRow(row);
   const newRow = sheet.getLastRow();
 
   // Re-write phone cells as explicit text so Sheets stores '0XXXXXXXXX', not integer
-  // (appendRow auto-coerces numeric-looking strings to numbers; setValue after the fact preserves string)
-  const phoneEmployer = row[4];   // col 5
-  const phoneMobile   = row[15];  // col 16
-  if (phoneEmployer) sheet.getRange(newRow, 5).setNumberFormat('@').setValue(String(phoneEmployer));
-  if (phoneMobile)   sheet.getRange(newRow, 16).setNumberFormat('@').setValue(String(phoneMobile));
+  const phoneEmployer2 = row[4];   // col 5
+  const phoneMobile2   = row[15];  // col 16
+  if (phoneEmployer2) sheet.getRange(newRow, 5).setNumberFormat('@').setValue(String(phoneEmployer2));
+  if (phoneMobile2)   sheet.getRange(newRow, 16).setNumberFormat('@').setValue(String(phoneMobile2));
 
   return newRow;
 }
 
 
 function buildSummary(data) {
+  const d   = k => safeString(data[k]);
+  const b   = k => !!data[k];
+  const ch  = data['children']     || [];
+  const oi  = data['other_income'] || [];
+  const fullName = [d('employee.last_name'), d('employee.first_name')].filter(Boolean).join(' ');
+  const hasSpouse = !!(d('spouse.last_name') || d('spouse.id'));
   const parts = [];
-  const fullName = [safeString(data.last_name), safeString(data.first_name)].filter(Boolean).join(' ');
-  if (fullName) parts.push('עובד: ' + fullName);
-  if (safeString(data.id_number)) parts.push('ת"ז: ' + safeString(data.id_number));
-  if (safeString(data.employer_name)) parts.push('מעסיק: ' + safeString(data.employer_name));
-  if (safeString(data.start_date)) parts.push('תחילת עבודה: ' + safeString(data.start_date));
-  parts.push('ילדים: ' + (Array.isArray(data.children) ? data.children.length : 0));
-  parts.push('הכנסות נוספות: ' + (Array.isArray(data.additional_incomes) ? data.additional_incomes.length : 0));
-  if (data.has_spouse) parts.push('יש בן/בת זוג');
-  if (data.has_other_income) parts.push('יש הכנסות אחרות');
-  if (data.has_tax_coordination) parts.push('יש תיאום מס');
+  if (fullName)              parts.push('עובד: ' + fullName);
+  if (d('employee.id'))      parts.push('ת"ז: ' + d('employee.id'));
+  if (d('employer.name'))    parts.push('מעסיק: ' + d('employer.name'));
+  if (d('employment.start_date')) parts.push('תחילת עבודה: ' + d('employment.start_date'));
+  parts.push('ילדים: ' + ch.length);
+  parts.push('הכנסות נוספות: ' + oi.length);
+  if (hasSpouse)                           parts.push('יש בן/בת זוג');
+  if (!b('income.other.none'))             parts.push('יש הכנסות אחרות');
+  if (b('tax_coordination.has_additional_income')) parts.push('יש תיאום מס');
   return {
-    full_name: fullName,
-    id_number: safeString(data.id_number),
-    employer_name: safeString(data.employer_name),
-    start_date: safeString(data.start_date),
-    children_count: Array.isArray(data.children) ? data.children.length : 0,
-    additional_incomes_count: Array.isArray(data.additional_incomes) ? data.additional_incomes.length : 0,
-    has_spouse: !!data.has_spouse,
-    has_other_income: !!data.has_other_income,
-    has_tax_coordination: !!data.has_tax_coordination,
+    full_name:                d('employee.last_name') + ' ' + d('employee.first_name'),
+    id_number:                d('employee.id'),
+    employer_name:            d('employer.name'),
+    start_date:               d('employment.start_date'),
+    children_count:           ch.length,
+    additional_incomes_count: oi.length,
+    has_spouse:               hasSpouse,
+    has_other_income:         !b('income.other.none'),
+    has_tax_coordination:     b('tax_coordination.has_additional_income'),
     text: parts.join(' | ')
   };
+}
+
+/* ==============================
+   Form101_NEW3_FF — Full-Fidelity Sheet
+   Single source of truth: every column = one bindKey from form_101_mapping JSON.
+   No Hebrew in headers; Hebrew display dictionary is maintained separately.
+   Operational columns prefixed _op.*
+============================== */
+
+// 126 data bindKeys (JSON page-order, skipping house_no / city / landline)
+// + 4 operational columns. Generated from NEW3 JSON — do NOT edit manually.
+const FF_HEADERS = [
+  'meta.tax_year',
+  'employer.deductions_file',
+  'employer.name',
+  'employer.address',
+  'employer.phone',
+  'employee.id',
+  'employee.last_name',
+  'employee.first_name',
+  'employee.birth_date',
+  'employee.immigration_date',
+  'employee.passport',
+  'employee.address.street',
+  'employee.address.zip',
+  'employee.mobile',
+  'employee.email',
+  'employee.gender.male',
+  'employee.gender.female',
+  'employee.marital_status.married',
+  'employee.marital_status.single',
+  'employee.marital_status.divorced',
+  'employee.marital_status.widowed',
+  'employee.marital_status.separated',
+  'employee.has_id.yes',
+  'employee.has_id.no',
+  'employee.kibbutz_member.no',
+  'employee.kibbutz_member.income_transferred',
+  'employee.kibbutz_member.income_not_transferred',
+  'employee.health_fund.member.yes',
+  'employee.health_fund.member.no',
+  'employee.health_fund.name',
+  'children[0].name',
+  'children[0].id',
+  'children[0].birth_date',
+  'children[1].name',
+  'children[1].id',
+  'children[1].birth_date',
+  'children[0].in_custody',
+  'children[1].in_custody',
+  'children[1].receives_allowance',
+  'children[0].receives_allowance',
+  'children[2].receives_allowance',
+  'children[2].in_custody',
+  'children[2].name',
+  'children[2].id',
+  'children[2].birth_date',
+  'children[3].name',
+  'children[3].id',
+  'children[3].birth_date',
+  'children[3].in_custody',
+  'children[3].receives_allowance',
+  'income.main.monthly_salary',
+  'income.main.additional_job',
+  'income.main.partial_salary',
+  'income.main.daily_worker',
+  'income.main.pension',
+  'income.main.scholarship',
+  'employment.start_date',
+  'income.other.none',
+  'income.other.monthly_salary',
+  'income.other.additional_job',
+  'income.other.partial_salary',
+  'income.other.daily_worker',
+  'income.other.pension',
+  'income.other.scholarship',
+  'income.credit_request.get_credits_here',
+  'income.credit_request.get_credits_elsewhere',
+  'income.other.no_training_fund',
+  'income.other.no_pension',
+  'spouse.id',
+  'spouse.passport',
+  'spouse.last_name',
+  'spouse.first_name',
+  'spouse.birth_date',
+  'spouse.immigration_date',
+  'spouse.has_income.none',
+  'spouse.has_income.yes',
+  'spouse.income_type.work',
+  'spouse.income_type.other',
+  'credits.1_israeli_resident',
+  'credits.2a_disability_100_or_blind',
+  'credits.2b_monthly_benefit',
+  'credits.3_eligible_locality',
+  'credits.3_from_date',
+  'credits.3_locality_name',
+  'credits.4_new_immigrant',
+  'credits.4_from_date',
+  'credits.4_no_income_until',
+  'credits.5_spouse_no_income',
+  'credits.6_single_parent_family',
+  'credits.7_children_in_custody',
+  'credits.7_children_born_in_year',
+  'credits.7_children_count_6_17',
+  'credits.7_children_count_18',
+  'credits.7_children_count_1_5',
+  'credits.8_children_not_in_custody',
+  'credits.8_children_count_1_5',
+  'credits.8_children_count_6_17',
+  'credits.9_single_parent',
+  'credits.10_children_not_in_custody_maintenance',
+  'credits.11_disabled_child',
+  'credits.12_spousal_support',
+  'credits.13_age_16_18',
+  'credits.14_released_soldier_or_service',
+  'credits.14_service_start',
+  'credits.14_service_end',
+  'credits.15_graduation',
+  'credits.16_reserve_combat',
+  'credits.16_reserve_days_prev_year',
+  'tax_coordination.no_income_until_start',
+  'tax_coordination.has_additional_income',
+  'tax_coordination.approval_attached',
+  'other_income[0].type',
+  'other_income[0].payer_name',
+  'other_income[0].address',
+  'other_income[0].deductions_file',
+  'other_income[0].monthly_amount',
+  'other_income[0].tax_withheld',
+  'other_income[1].type',
+  'other_income[1].payer_name',
+  'other_income[1].address',
+  'other_income[1].deductions_file',
+  'other_income[1].monthly_amount',
+  'other_income[1].tax_withheld',
+  'signature.date',
+  'signature.declaration',
+  'signature.applicant_signature',
+  // operational — not in JSON
+  '_op.submitted_at',
+  '_op.pdf_url',
+  '_op.file_id',
+  '_op.status',
+];
+
+/**
+ * Build a flat FF row directly from bindKey-named payload `data`.
+ * No translation needed — frontend sends bindKey names 1:1.
+ * Arrays (children, other_income) are expanded to flat bindKey slots.
+ */
+function buildFFRow_(data) {
+  const ch = data['children']     || [];
+  const oi = data['other_income'] || [];
+  const row = {};
+
+  // Copy all scalar bindKey fields directly
+  FF_HEADERS.forEach(function(h) {
+    if (h.startsWith('_op.') || h.startsWith('children[') || h.startsWith('other_income[')) return;
+    const v = data[h];
+    row[h] = v !== undefined ? String(v) : '';
+  });
+
+  // Expand children[] array → children[i].field flat slots
+  for (let i = 0; i < 4; i++) {
+    row[`children[${i}].name`]               = ch[i] ? String(ch[i].name || '') : '';
+    row[`children[${i}].id`]                 = ch[i] ? String(ch[i].id || '') : '';
+    row[`children[${i}].birth_date`]         = ch[i] ? String(ch[i].birth_date || '') : '';
+    row[`children[${i}].in_custody`]         = ch[i] ? String(!!ch[i].in_custody) : 'false';
+    row[`children[${i}].receives_allowance`] = ch[i] ? String(!!ch[i].receives_allowance) : 'false';
+  }
+
+  // Expand other_income[] array → other_income[i].field flat slots
+  for (let i = 0; i < 2; i++) {
+    row[`other_income[${i}].type`]            = oi[i] ? String(oi[i].type || '') : '';
+    row[`other_income[${i}].payer_name`]      = oi[i] ? String(oi[i].payer_name || '') : '';
+    row[`other_income[${i}].address`]         = oi[i] ? String(oi[i].address || '') : '';
+    row[`other_income[${i}].deductions_file`] = oi[i] ? String(oi[i].deductions_file || '') : '';
+    row[`other_income[${i}].monthly_amount`]  = oi[i] ? String(oi[i].monthly_amount || '') : '';
+    row[`other_income[${i}].tax_withheld`]    = oi[i] ? String(oi[i].tax_withheld || '') : '';
+  }
+
+  // Operational columns (filled by caller)
+  row['_op.submitted_at'] = '';
+  row['_op.pdf_url']      = '';
+  row['_op.file_id']      = '';
+  row['_op.status']       = '';
+  return row;
+}
+
+/**
+ * Save a submission to the Form101_NEW3_FF tab (Full-Fidelity, bindKey columns).
+ * Creates the tab and header row if they don't exist.
+ * Returns the 1-based row number written.
+ */
+function saveToSheetFF_(data, pdfViewModel) {
+  const ss = getSpreadsheet_();
+  if (!ss) return null;
+
+  const FF_TAB = 'Form101_NEW3_FF';
+  let sheet = ss.getSheetByName(FF_TAB);
+  if (!sheet) sheet = ss.insertSheet(FF_TAB);
+
+  // Ensure header row matches FF_HEADERS exactly
+  const existingHeaders = sheet.getLastRow() > 0
+    ? sheet.getRange(1, 1, 1, FF_HEADERS.length).getValues()[0]
+    : [];
+  if (JSON.stringify(existingHeaders) !== JSON.stringify(FF_HEADERS)) {
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(FF_HEADERS);
+    } else {
+      sheet.getRange(1, 1, 1, FF_HEADERS.length).setValues([FF_HEADERS]);
+    }
+  }
+
+  const rowObj = buildFFRow_(data);
+  rowObj['_op.submitted_at'] = data['_op.submitted_at'] || new Date().toISOString();
+
+  const rowArr = FF_HEADERS.map(h => rowObj[h] !== undefined ? rowObj[h] : '');
+  sheet.appendRow(rowArr);
+  return sheet.getLastRow();
+}
+
+/**
+ * Update operational columns (_op.pdf_url, _op.file_id, _op.status) in FF tab
+ * after PDF creation.
+ */
+function updateSheetFFAfterPdf_(ffRowNum, pdfFile) {
+  if (!ffRowNum || !pdfFile) return;
+  const ss = getSpreadsheet_();
+  if (!ss) return;
+  const sheet = ss.getSheetByName('Form101_NEW3_FF');
+  if (!sheet) return;
+  const pdfUrlCol  = FF_HEADERS.indexOf('_op.pdf_url')  + 1;
+  const fileIdCol  = FF_HEADERS.indexOf('_op.file_id')  + 1;
+  const statusCol  = FF_HEADERS.indexOf('_op.status')   + 1;
+  if (pdfUrlCol > 0)  sheet.getRange(ffRowNum, pdfUrlCol).setValue(pdfFile.getUrl());
+  if (fileIdCol > 0)  sheet.getRange(ffRowNum, fileIdCol).setValue(pdfFile.getId());
+  if (statusCol > 0)  sheet.getRange(ffRowNum, statusCol).setValue('✅ הושלם');
 }
 
 function updateSheetAfterPdf(rowNum, pdfFile) {
@@ -712,22 +902,18 @@ function createPDF(data) {
 }
 
 function buildFileName_(data) {
-  const year = safeString(data.taxYear) || String(new Date().getFullYear());
-  const last = sanitizeFilePart_(data.last_name || 'ללא');
-  const first = sanitizeFilePart_(data.first_name || 'שם');
-  const id = sanitizeFilePart_(data.id_number || '');
+  const year  = safeString(data['meta.tax_year']) || String(new Date().getFullYear());
+  const last  = sanitizeFilePart_(safeString(data['employee.last_name'])  || 'ללא');
+  const first = sanitizeFilePart_(safeString(data['employee.first_name']) || 'שם');
+  const id    = sanitizeFilePart_(safeString(data['employee.id'])         || '');
   return `טופס_101_${year}_${last}_${first}${id ? '_' + id : ''}.pdf`;
 }
 
 function getDestinationFolder_(data) {
-  const main = getOrCreateFolder_(CONFIG.MAIN_FOLDER);
-  const yearFolder = getOrCreateFolder_(String(data.taxYear || new Date().getFullYear()), main);
-
-  // אופציונלי: תיקיית מעסיק
-  const employerFolderName = sanitizeFilePart_(data.employer_name || '').trim();
-  if (employerFolderName) {
-    return getOrCreateFolder_(employerFolderName, yearFolder);
-  }
+  const main       = getOrCreateFolder_(CONFIG.MAIN_FOLDER);
+  const yearFolder = getOrCreateFolder_(String(data['meta.tax_year'] || new Date().getFullYear()), main);
+  const employerFolderName = sanitizeFilePart_(safeString(data['employer.name']) || '').trim();
+  if (employerFolderName) return getOrCreateFolder_(employerFolderName, yearFolder);
   return yearFolder;
 }
 
@@ -740,92 +926,114 @@ function getOrCreateFolder_(name, parent) {
 
 
 function buildPdfViewModel(data) {
+  const d  = k => safeString(data[k]);
+  const b  = k => !!data[k];
+  const ch = data['children']     || [];
+  const oi = data['other_income'] || [];
+
   return {
-    taxYear: safeString(data.taxYear),
+    taxYear: d('meta.tax_year'),
 
-    full_name: [safeString(data.last_name), safeString(data.first_name)].filter(Boolean).join(' '),
-    employer_name: safeString(data.employer_name),
-    employer_tax_id: safeString(data.employer_tax_id),
-    employer_address: safeString(data.employer_address),
-    employer_phone: safeString(data.employer_phone),
+    full_name:        [d('employee.last_name'), d('employee.first_name')].filter(Boolean).join(' '),
+    employer_name:    d('employer.name'),
+    employer_tax_id:  d('employer.deductions_file'),
+    employer_address: d('employer.address'),
+    employer_phone:   d('employer.phone'),
 
-    last_name: safeString(data.last_name),
-    first_name: safeString(data.first_name),
-    id_number: safeString(data.id_number),
-    passport_number: safeString(data.passport_number),
-    birth_date: safeString(data.birth_date),
-    aliyah_date: safeString(data.aliya_date),
-    address: safeString(data.address),
-    postal_code: safeString(data.postal_code),
-    mobile_phone: safeString(data.mobile_phone),
-    email: safeString(data.email),
+    last_name:       d('employee.last_name'),
+    first_name:      d('employee.first_name'),
+    id_number:       d('employee.id'),
+    passport_number: d('employee.passport'),
+    birth_date:      d('employee.birth_date'),
+    aliyah_date:     d('employee.immigration_date'),
+    address:         d('employee.address.street'),
+    postal_code:     d('employee.address.zip'),
+    mobile_phone:    d('employee.mobile'),
+    email:           d('employee.email'),
 
-    gender: safeString(data.gender),
-    marital_status: safeString(data.marital_status),
-    israeli_resident: safeString(data.israeli_resident),
-    kibbutz_member: safeString(data.kibbutz_member),
-    health_fund: safeString(data.health_fund),
+    gender: b('employee.gender.male') ? 'זכר' : b('employee.gender.female') ? 'נקבה' : '',
+    marital_status:
+      b('employee.marital_status.married')   ? 'נשוי/אה' :
+      b('employee.marital_status.single')    ? 'רווק/ה'  :
+      b('employee.marital_status.divorced')  ? 'גרוש/ה'  :
+      b('employee.marital_status.widowed')   ? 'אלמן/ה'  :
+      b('employee.marital_status.separated') ? 'פרוד/ה'  : '',
+    israeli_resident: b('employee.has_id.yes') ? 'כן' : 'לא',
+    kibbutz_member:
+      b('employee.kibbutz_member.income_transferred') ? 'כן' :
+      b('employee.kibbutz_member.no') ? 'לא' : '',
+    health_fund: d('employee.health_fund.name'),
 
-    start_date: safeString(data.start_date),
-    has_other_income: !!data.has_other_income,
-    has_spouse: !!data.has_spouse,
-    spouse_has_income: safeString(data.spouse_has_income),
-    has_tax_coordination: !!data.has_tax_coordination,
-    tax_coordination_approved: !!data.tax_coordination_approved,
-    confirm_declaration: !!data.confirm_declaration,
-    declaration_date: safeString(data.declaration_date),
-    signature: safeString(data.signature),
+    start_date:               d('employment.start_date'),
+    has_other_income:         !b('income.other.none'),
+    has_spouse:               !!(d('spouse.last_name') || d('spouse.id')),
+    spouse_has_income:
+      b('spouse.income_type.work')  ? 'עבודה' :
+      b('spouse.income_type.other') ? 'אחר'   : 'לא',
+    has_tax_coordination:     b('tax_coordination.has_additional_income'),
+    tax_coordination_approved: b('tax_coordination.approval_attached'),
+    confirm_declaration:      b('signature.declaration'),
+    declaration_date:         d('signature.date'),
+    signature:                d('signature.applicant_signature'),
 
-    children: Array.isArray(data.children) ? data.children : [],
-    additional_incomes: Array.isArray(data.additional_incomes) ? data.additional_incomes : [],
-    changes: Array.isArray(data.changes) ? data.changes : [],
+    children:           ch,
+    additional_incomes: oi,
+    changes:            data['changes'] || [],
+
+    // Spouse fields for template
+    spouse_last_name:    d('spouse.last_name'),
+    spouse_first_name:   d('spouse.first_name'),
+    spouse_id:           d('spouse.id'),
+    spouse_passport:     d('spouse.passport'),
+    spouse_birth_date:   d('spouse.birth_date'),
+    spouse_aliya_date:   d('spouse.immigration_date'),
 
     relief_dates: {
-      relief_3_date: safeString(data.relief_3_date),
-      relief_4_date: safeString(data.relief_4_date),
-      relief_4_no_income_until: safeString(data.relief_4_no_income_until),
-      relief_14_start: safeString(data.relief_14_start),
-      relief_14_end: safeString(data.relief_14_end),
-      relief_16_days: safeString(data.relief_16_days)
+      relief_3_date:            d('credits.3_from_date'),
+      relief_4_date:            d('credits.4_from_date'),
+      relief_4_no_income_until: d('credits.4_no_income_until'),
+      relief_14_start:          d('credits.14_service_start'),
+      relief_14_end:            d('credits.14_service_end'),
+      relief_16_days:           d('credits.16_reserve_days_prev_year'),
     },
 
     flags: {
-      income_type_monthly: !!data.income_type_monthly,
-      income_type_additional: !!data.income_type_additional,
-      income_type_partial: !!data.income_type_partial,
-      income_type_daily: !!data.income_type_daily,
-      income_type_pension: !!data.income_type_pension,
-      income_type_scholarship: !!data.income_type_scholarship,
+      income_type_monthly:    b('income.main.monthly_salary'),
+      income_type_additional: b('income.main.additional_job'),
+      income_type_partial:    b('income.main.partial_salary'),
+      income_type_daily:      b('income.main.daily_worker'),
+      income_type_pension:    b('income.main.pension'),
+      income_type_scholarship:b('income.main.scholarship'),
 
-      other_income_monthly: !!data.other_income_monthly,
-      other_income_additional: !!data.other_income_additional,
-      other_income_partial: !!data.other_income_partial,
-      other_income_daily: !!data.other_income_daily,
-      other_income_pension: !!data.other_income_pension,
-      other_income_scholarship: !!data.other_income_scholarship,
-      no_study_fund_other: !!data.no_study_fund_other,
-      no_pension_other: !!data.no_pension_other,
+      other_income_monthly:    b('income.other.monthly_salary'),
+      other_income_additional: b('income.other.additional_job'),
+      other_income_partial:    b('income.other.partial_salary'),
+      other_income_daily:      b('income.other.daily_worker'),
+      other_income_pension:    b('income.other.pension'),
+      other_income_scholarship:b('income.other.scholarship'),
+      no_study_fund_other:     b('income.other.no_training_fund'),
+      no_pension_other:        b('income.other.no_pension'),
 
-      relief_1_resident: !!data.relief_1_resident,
-      relief_2_disabled: !!data.relief_2_disabled,
-      relief_2_1_allowance: !!data.relief_2_1_allowance,
-      relief_3_settlement: !!data.relief_3_settlement,
-      relief_4_new_immigrant: !!data.relief_4_new_immigrant,
-      relief_5_spouse: !!data.relief_5_spouse,
-      relief_6_single_parent: !!data.relief_6_single_parent,
-      relief_7_children_custody: !!data.relief_7_children_custody,
-      relief_8_children_general: !!data.relief_8_children_general,
-      relief_9_sole_parent: !!data.relief_9_sole_parent,
-      relief_10_children_not_custody: !!data.relief_10_children_not_custody,
-      relief_11_disabled_children: !!data.relief_11_disabled_children,
-      relief_12_alimony: !!data.relief_12_alimony,
-      relief_13_age_16_18: !!data.relief_13_age_16_18,
-      relief_14_discharged_soldier: !!data.relief_14_discharged_soldier,
-      relief_15_academic: !!data.relief_15_academic,
-      relief_16_reserve: !!data.relief_16_reserve,
-      relief_17_no_income: !!data.relief_17_no_income,
-      relief_wants: !!data.relief_wants,
-      relief_has_other: !!data.relief_has_other
+      relief_1_resident:              b('credits.1_israeli_resident'),
+      relief_2_disabled:              b('credits.2a_disability_100_or_blind'),
+      relief_2_1_allowance:           b('credits.2b_monthly_benefit'),
+      relief_3_settlement:            b('credits.3_eligible_locality'),
+      relief_4_new_immigrant:         b('credits.4_new_immigrant'),
+      relief_5_spouse:                b('credits.5_spouse_no_income'),
+      relief_6_single_parent:         b('credits.6_single_parent_family'),
+      relief_7_children_custody:      b('credits.7_children_in_custody'),
+      relief_8_children_general:      b('credits.8_children_not_in_custody'),
+      relief_9_sole_parent:           b('credits.9_single_parent'),
+      relief_10_children_not_custody: b('credits.10_children_not_in_custody_maintenance'),
+      relief_11_disabled_children:    b('credits.11_disabled_child'),
+      relief_12_alimony:              b('credits.12_spousal_support'),
+      relief_13_age_16_18:            b('credits.13_age_16_18'),
+      relief_14_discharged_soldier:   b('credits.14_released_soldier_or_service'),
+      relief_15_academic:             b('credits.15_graduation'),
+      relief_16_reserve:              b('credits.16_reserve_combat'),
+      relief_17_no_income:            b('tax_coordination.no_income_until_start'),
+      relief_wants:                   b('income.credit_request.get_credits_here'),
+      relief_has_other:               b('income.credit_request.get_credits_elsewhere'),
     }
   };
 }
@@ -843,8 +1051,8 @@ function sendToMake(data, pdfFile, rowNum) {
     // ── Meta ──────────────────────────────────────────────────────────────
     meta: {
       form_version:   '101-v6',
-      submitted_at:   safeString(data.submitted_at),
-      tax_year:       safeString(data.taxYear),
+      submitted_at:   safeString(data['_op.submitted_at']),
+      tax_year:       safeString(data['meta.tax_year']),
       sheet_row:      rowNum || null,
       spreadsheet_id: CONFIG.SPREADSHEET_ID || null,
     },
@@ -855,130 +1063,127 @@ function sendToMake(data, pdfFile, rowNum) {
       id:         pdfFile ? pdfFile.getId()   : '',
       name:       pdfFile ? pdfFile.getName() : '',
       drive_path: pdfFile
-        ? ('HR_101/' + safeString(data.taxYear) + '/' + safeString(data.employer_name))
+        ? ('HR_101/' + safeString(data['meta.tax_year']) + '/' + safeString(data['employer.name']))
         : '',
     },
 
     // ── Section A — Employer ──────────────────────────────────────────────
     employer: {
-      name:       safeString(data.employer_name),
-      tax_id:     safeString(data.employer_tax_id),
-      phone:      safeString(data.employer_phone),
-      address:    safeString(data.employer_address),
-      start_date: safeString(data.start_date),
+      name:       safeString(data['employer.name']),
+      tax_id:     safeString(data['employer.deductions_file']),
+      phone:      safeString(data['employer.phone']),
+      address:    safeString(data['employer.address']),
+      start_date: safeString(data['employment.start_date']),
     },
 
     // ── Section B — Employee ──────────────────────────────────────────────
     employee: {
-      last_name:        safeString(data.last_name),
-      first_name:       safeString(data.first_name),
-      full_name:        [safeString(data.last_name), safeString(data.first_name)].filter(Boolean).join(' '),
-      id_number:        safeString(data.id_number),
-      passport_number:  safeString(data.passport_number),
-      birth_date:       safeString(data.birth_date),
-      aliya_date:       safeString(data.aliya_date),
-      address:          safeString(data.address),
-      postal_code:      safeString(data.postal_code),
-      mobile_phone:     safeString(data.mobile_phone),
-      email:            safeString(data.email),
-      gender:           safeString(data.gender),
-      marital_status:   safeString(data.marital_status),
-      israeli_resident: safeString(data.israeli_resident),
-      kibbutz_member:   safeString(data.kibbutz_member),
-      health_fund:      safeString(data.health_fund),
-      signature:        safeString(data.signature),  // base64 data URL מהחתימה הדיגיטלית
+      last_name:    safeString(data['employee.last_name']),
+      first_name:   safeString(data['employee.first_name']),
+      full_name:    [safeString(data['employee.last_name']), safeString(data['employee.first_name'])].filter(Boolean).join(' '),
+      id_number:    safeString(data['employee.id']),
+      passport:     safeString(data['employee.passport']),
+      birth_date:   safeString(data['employee.birth_date']),
+      aliya_date:   safeString(data['employee.immigration_date']),
+      address:      safeString(data['employee.address.street']),
+      postal_code:  safeString(data['employee.address.zip']),
+      mobile_phone: safeString(data['employee.mobile']),
+      email:        safeString(data['employee.email']),
+      gender:       !!data['employee.gender.male'] ? 'זכר' : !!data['employee.gender.female'] ? 'נקבה' : '',
+      health_fund:  safeString(data['employee.health_fund.name']),
+      signature:    safeString(data['signature.applicant_signature']),
     },
 
     // ── Section C — Children ──────────────────────────────────────────────
     children: {
-      count: Array.isArray(data.children) ? data.children.length : 0,
-      items: Array.isArray(data.children) ? data.children : [],
+      count: (data['children'] || []).length,
+      items: data['children'] || [],
     },
 
     // ── Section D — Income type ───────────────────────────────────────────
     income: {
-      monthly:     !!data.income_type_monthly,
-      additional:  !!data.income_type_additional,
-      partial:     !!data.income_type_partial,
-      daily:       !!data.income_type_daily,
-      pension:     !!data.income_type_pension,
-      scholarship: !!data.income_type_scholarship,
-      summary:     safeString(data.summary_income_types),
+      monthly:     !!data['income.main.monthly_salary'],
+      additional:  !!data['income.main.additional_job'],
+      partial:     !!data['income.main.partial_salary'],
+      daily:       !!data['income.main.daily_worker'],
+      pension:     !!data['income.main.pension'],
+      scholarship: !!data['income.main.scholarship'],
+      summary:     buildIncomeTypesSummary(data),
     },
 
     // ── Section E — Other income ──────────────────────────────────────────
     other_income: {
-      has_other_income:    !!data.has_other_income,
-      count:               Array.isArray(data.additional_incomes) ? data.additional_incomes.length : 0,
-      items:               Array.isArray(data.additional_incomes) ? data.additional_incomes : [],
-      no_study_fund_other: !!data.no_study_fund_other,
-      no_pension_other:    !!data.no_pension_other,
-      summary:             safeString(data.summary_other_income),
+      has_other_income:    !data['income.other.none'],
+      count:               (data['other_income'] || []).length,
+      items:               data['other_income'] || [],
+      no_study_fund_other: !!data['income.other.no_training_fund'],
+      no_pension_other:    !!data['income.other.no_pension'],
+      summary:             buildOtherIncomeSummary(data),
     },
 
     // ── Section F — Spouse ────────────────────────────────────────────────
     spouse: {
-      has_spouse:      !!data.has_spouse,
-      last_name:       safeString(data.spouse_last_name),
-      first_name:      safeString(data.spouse_first_name),
-      id_number:       safeString(data.spouse_id_number),
-      passport_number: safeString(data.spouse_passport_number),
-      birth_date:      safeString(data.spouse_birth_date),
-      aliya_date:      safeString(data.spouse_aliya_date),
-      has_income:      safeString(data.spouse_has_income),
-      summary:         safeString(data.summary_spouse),
+      has_spouse:      !!(safeString(data['spouse.last_name']) || safeString(data['spouse.id'])),
+      last_name:       safeString(data['spouse.last_name']),
+      first_name:      safeString(data['spouse.first_name']),
+      id_number:       safeString(data['spouse.id']),
+      passport:        safeString(data['spouse.passport']),
+      birth_date:      safeString(data['spouse.birth_date']),
+      aliya_date:      safeString(data['spouse.immigration_date']),
+      has_income:      !!data['spouse.has_income.yes'] ? 'כן' : 'לא',
+      summary:         buildSpouseSummary(data),
     },
 
     // ── Section H — Reliefs ───────────────────────────────────────────────
     reliefs: {
-      relief_1_resident:              !!data.relief_1_resident,
-      relief_2_disabled:              !!data.relief_2_disabled,
-      relief_2_1_allowance:           !!data.relief_2_1_allowance,
-      relief_3_settlement:            !!data.relief_3_settlement,
-      relief_4_new_immigrant:         !!data.relief_4_new_immigrant,
-      relief_5_spouse:                !!data.relief_5_spouse,
-      relief_6_single_parent:         !!data.relief_6_single_parent,
-      relief_7_children_custody:      !!data.relief_7_children_custody,
-      relief_8_children_general:      !!data.relief_8_children_general,
-      relief_9_sole_parent:           !!data.relief_9_sole_parent,
-      relief_10_children_not_custody: !!data.relief_10_children_not_custody,
-      relief_11_disabled_children:    !!data.relief_11_disabled_children,
-      relief_12_alimony:              !!data.relief_12_alimony,
-      relief_13_age_16_18:            !!data.relief_13_age_16_18,
-      relief_14_discharged_soldier:   !!data.relief_14_discharged_soldier,
-      relief_15_academic:             !!data.relief_15_academic,
-      relief_16_reserve:              !!data.relief_16_reserve,
-      relief_17_no_income:            !!data.relief_17_no_income,
-      relief_wants:                   !!data.relief_wants,
-      relief_has_other:               !!data.relief_has_other,
+      relief_1_resident:              !!data['credits.1_israeli_resident'],
+      relief_2_disabled:              !!data['credits.2a_disability_100_or_blind'],
+      relief_2_1_allowance:           !!data['credits.2b_monthly_benefit'],
+      relief_3_settlement:            !!data['credits.3_eligible_locality'],
+      relief_4_new_immigrant:         !!data['credits.4_new_immigrant'],
+      relief_5_spouse:                !!data['credits.5_spouse_no_income'],
+      relief_6_single_parent:         !!data['credits.6_single_parent_family'],
+      relief_7_children_custody:      !!data['credits.7_children_in_custody'],
+      relief_8_children_general:      !!data['credits.8_children_not_in_custody'],
+      relief_9_sole_parent:           !!data['credits.9_single_parent'],
+      relief_10_children_not_custody: !!data['credits.10_children_not_in_custody_maintenance'],
+      relief_11_disabled_children:    !!data['credits.11_disabled_child'],
+      relief_12_alimony:              !!data['credits.12_spousal_support'],
+      relief_13_age_16_18:            !!data['credits.13_age_16_18'],
+      relief_14_discharged_soldier:   !!data['credits.14_released_soldier_or_service'],
+      relief_15_academic:             !!data['credits.15_graduation'],
+      relief_16_reserve:              !!data['credits.16_reserve_combat'],
+      relief_17_no_income:            !!data['tax_coordination.no_income_until_start'],
+      relief_wants:                   !!data['income.credit_request.get_credits_here'],
+      relief_has_other:               !!data['income.credit_request.get_credits_elsewhere'],
       dates: {
-        relief_3_date:            safeString(data.relief_3_date),
-        relief_4_date:            safeString(data.relief_4_date),
-        relief_4_no_income_until: safeString(data.relief_4_no_income_until),
-        relief_14_start:          safeString(data.relief_14_start),
-        relief_14_end:            safeString(data.relief_14_end),
-        relief_16_days:           safeString(data.relief_16_days),
+        relief_3_date:            safeString(data['credits.3_from_date']),
+        relief_4_date:            safeString(data['credits.4_from_date']),
+        relief_4_no_income_until: safeString(data['credits.4_no_income_until']),
+        relief_14_start:          safeString(data['credits.14_service_start']),
+        relief_14_end:            safeString(data['credits.14_service_end']),
+        relief_16_days:           safeString(data['credits.16_reserve_days_prev_year']),
       },
-      summary: safeString(data.summary_reliefs),
+      summary: buildReliefsSummary(data),
     },
 
     // ── Section T — Tax coordination ──────────────────────────────────────
     tax_coordination: {
-      has_tax_coordination: !!data.has_tax_coordination,
-      approved:             !!data.tax_coordination_approved,
-      summary:              safeString(data.summary_tax_coordination),
+      has_tax_coordination: !!data['tax_coordination.has_additional_income'],
+      approved:             !!data['tax_coordination.approval_attached'],
+      summary:              buildTaxCoordinationSummary(data),
     },
 
     // ── Section Z — Changes ───────────────────────────────────────────────
     changes: {
-      count: Array.isArray(data.changes) ? data.changes.length : 0,
-      items: Array.isArray(data.changes) ? data.changes : [],
+      count: (data['changes'] || []).length,
+      items: data['changes'] || [],
     },
 
     // ── Declaration ───────────────────────────────────────────────────────
     declaration: {
-      date:      safeString(data.declaration_date),
-      confirmed: !!data.confirm_declaration,
+      date:      safeString(data['signature.date']),
+      confirmed: !!data['signature.declaration'],
     },
 
   };

@@ -27,3 +27,4 @@ scripts/extract_bg.py
 scripts/generate_positions.py
 scripts/grid_check.py
 scripts/map_coords.py
+.env

@@ -35,8 +35,34 @@ def deploy_new_version() -> None:
     print(f"    {out}")
 
 
-def run(push_only: bool = False) -> None:
+def sync_template() -> None:
+    """Copy PDFTemplate_v6.html → src/PDFTemplate.html before pushing."""
+    import shutil
+    src = os.path.join(PROJECT_DIR, "PDFTemplate_v6.html")
+    dst = os.path.join(PROJECT_DIR, "src", "PDFTemplate.html")
+    shutil.copy2(src, dst)
+    print(f"  → Synced PDFTemplate_v6.html → src/PDFTemplate.html")
+
+
+def validate_mapping() -> None:
+    """Run pre-deploy mapping validation (build-breaking checks)."""
+    import importlib.util, pathlib
+    spec = importlib.util.spec_from_file_location(
+        "validate_mapping",
+        pathlib.Path(PROJECT_DIR) / "scripts" / "validate_mapping.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rc = mod.main()
+    if rc != 0:
+        raise RuntimeError("Pre-deploy validation FAILED — aborting deploy. Run: python -m scripts.validate_mapping")
+
+
+def run(push_only: bool = False, skip_validate: bool = False) -> None:
     print("\n[DEPLOY]")
+    if not skip_validate:
+        validate_mapping()
+    sync_template()
     push()
     if not push_only:
         deploy_new_version()
@@ -44,4 +70,5 @@ def run(push_only: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    run(push_only="--push-only" in sys.argv)
+    run(push_only="--push-only" in sys.argv,
+        skip_validate="--skip-validate" in sys.argv)

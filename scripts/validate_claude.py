@@ -23,12 +23,30 @@ _QA_PROMPT = """
 You are reviewing a generated Hebrew tax form (Israeli Form 101 / טופס 101).
 The form has 2 pages. Each image is one page of the rendered PDF.
 
-Examine the form carefully and identify:
-1. Text fields that appear to be in the wrong position or are missing
-2. Checkmark (✓) marks that appear to be at incorrect locations or are missing
-3. Any text that overflows its box or is clipped
-4. Any elements that are clearly out of alignment with the form background
-5. Any section where the overlay does not match the printed form lines/boxes
+IMPORTANT — known correct layout (do NOT flag these as issues):
+- The form is RTL (right-to-left). Hebrew text reads right-to-left.
+- Multiple data fields share the SAME horizontal row:
+  • Row ~57mm: ID number, first name, last name, birth date, AND aliya date are ALL on the same line
+  • Row ~63mm: street, city, postal code on the same line
+  • Row ~82mm: phone and email on the same line
+- The children table (rows ~100-120mm) has columns: child name, ID, birth date, checkmarks — data from different columns will appear on the same horizontal line
+- The background image contains printed Hebrew form text (labels, boxes, lines) — this is the form template, NOT overlay errors
+- Dates appearing side-by-side on the same row is CORRECT and EXPECTED
+- Children's birth dates (e.g. 15/03/2010, 22/07/2012) appear in the children table rows, NOT in the phone field
+- Employment start date field is at ~98mm top, left side of page 1
+
+Flag ONLY these genuine issues:
+1. Overlay text that is clearly OUTSIDE its form box (not just near the edge)
+2. A checkbox mark (✓) that is clearly in the wrong row or column (off by >5mm)
+3. Text that is completely missing where it should appear
+4. Text that renders on top of another text field (same x AND y position within 3mm)
+
+Do NOT flag:
+- Multiple fields on the same horizontal row (this is by design)
+- Slight RTL rendering differences
+- Hebrew text reading right-to-left
+- Form background labels (those are the printed form, not overlay errors)
+- Small alignment differences of < 3mm
 
 Return a JSON object with this exact structure:
 {
@@ -39,8 +57,8 @@ Return a JSON object with this exact structure:
   "summary": "<one-sentence summary>"
 }
 
-Return ONLY the JSON. No markdown, no explanation outside the JSON.
-A score of 10 means perfect alignment; 8+ means acceptable for production; below 8 means fixes required.
+Return ONLY the JSON. No markdown fences, no explanation outside the JSON.
+A score of 10 means perfect alignment; 8+ means acceptable for production; below 8 means real fixes required.
 """.strip()
 
 
@@ -121,8 +139,13 @@ def run_visual_qa(pdf_bytes: bytes) -> tuple[dict, bool]:
         print(f"  ❌ Claude API error: {e}")
         return {"error": str(e)}, True  # don't fail pipeline on API errors
 
+    # Strip markdown code fences if present
+    stripped = raw.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.split("\n", 1)[-1]
+        stripped = stripped.rsplit("```", 1)[0].strip()
     try:
-        qa = json.loads(raw)
+        qa = json.loads(stripped)
     except json.JSONDecodeError:
         print(f"  ⚠  Claude returned non-JSON: {raw[:200]}")
         return {"raw": raw}, True
