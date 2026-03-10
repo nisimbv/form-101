@@ -41,7 +41,7 @@ const CONFIG = {
   FORM_PUBLIC_URL: 'https://nisimbv.github.io/form-101/index_v6.html',
 
   // פרטי HR להודעות (אופציונלי)
-  HR_PHONE: '',
+  HR_PHONE: '0524669515',
   HR_EMAIL: '',
 
   TIMEZONE: 'Asia/Jerusalem',
@@ -1087,7 +1087,7 @@ function sendToMake(data, pdfFile, rowNum) {
       aliya_date:   safeString(data['employee.immigration_date']),
       address:      safeString(data['employee.address.street']),
       postal_code:  safeString(data['employee.address.zip']),
-      mobile_phone: safeString(data['employee.mobile']),
+      mobile_phone: (function(p){ return p.startsWith('0') ? p.slice(1) : p; })(safeString(data['employee.mobile'])),
       email:        safeString(data['employee.email']),
       gender:       !!data['employee.gender.male'] ? 'זכר' : !!data['employee.gender.female'] ? 'נקבה' : '',
       health_fund:  safeString(data['employee.health_fund.name']),

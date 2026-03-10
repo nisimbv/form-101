@@ -108,7 +108,7 @@
                 "variables": [
                   {
                     "name": "wa_employee",
-                    "value": "972{{substring(1.employee.mobile_phone; 1)}}"
+                    "value": "+972{{substring(1.employee.mobile_phone; 1)}}"
                   }
                 ]
               },
@@ -158,7 +158,7 @@
                 "variables": [
                   {
                     "name": "wa_hr",
-                    "value": "972{{substring(\"REPLACE_ME_HR_PHONE\"; 1)}}"
+                    "value": "+972{{substring(\"524669515\"; 1)}}"
                   }
                 ]
               },
@@ -317,7 +317,7 @@
       "REPLACE_ME_GAS_DEPLOYMENT_ID": "Your GAS deployment ID (from Deploy → Manage Deployments)",
       "REPLACE_ME_WA_CONNECTION_ID": "Your WhatsApp Business connection ID in Make",
       "REPLACE_ME_WA_CONNECTION_LABEL": "Display name of your WhatsApp Business connection",
-      "REPLACE_ME_HR_PHONE": "HR phone in 0XXXXXXXXX format (e.g. 0521234567)",
+      "0524669515": "HR phone in 0XXXXXXXXX format (e.g. 0521234567)",
       "REPLACE_ME_HR_EMAIL": "HR email address for error notifications",
       "REPLACE_ME_EMAIL_CONNECTION_ID": "Your email (Gmail/SMTP) connection ID in Make",
       "REPLACE_ME_EMAIL_CONNECTION_LABEL": "Display name of your email connection"

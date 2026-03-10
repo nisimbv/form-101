@@ -34,7 +34,7 @@ TEST_DATA = {
     "first_name":      "אוטומציה",
     "id_number":       "123456789",
     "birth_date":      "1985-06-15",
-    "mobile_phone":    "0500000001",
+    "mobile_phone":    "0524669515",
     "email":           "automation@test.com",
     "employer_name":   "חברת בדיקות",
     "employer_tax_id": "500000001",
@@ -69,7 +69,7 @@ EXPECTED_SHEET_COLS = {
     "מספר זהות":                 "123456789",       # col 10
     "תאריך לידה":                "1985-06-15",     # col 12
     "מיקוד":                     "61000",           # col 15
-    "טלפון נייד":                "0500000001",      # col 16
+    "טלפון נייד":                "0524669515",      # col 16
     "סוג הכנסה ממעסיק":         "משכורת",          # col 25 (substring)
     "זכאויות - סיכום":           "תושב",            # col 33 (substring)
     "סטטוס":                     "✅",              # col 39 — matches any success state (הושלם / אושר על ידי HR)
@@ -92,7 +92,7 @@ EXPECTED_TEXT_FIELDS = [
     # ── Section B — Address row ────────────────────────────────────────────
     ("postal_code",     1,   9.7,  62.5, "61000"),          # employee.address.zip x=37,y=238
     # ── Section B — Contact row ────────────────────────────────────────────
-    ("mobile_phone",    1,   8.1,  81.7, "0500000001"),     # employee.mobile x=31,y=311
+    ("mobile_phone",    1,   8.1,  81.7, "0524669515"),     # employee.mobile x=31,y=311
     # email skipped — LTR ASCII in RTL PDF is not reliably extractable by pdfplumber
     # ── Page 2 header ──────────────────────────────────────────────────────
     ("id_number_p2",    2,  26.5,   3.9, "123456789"),      # employee.id (p2) x=101,y=15
@@ -139,7 +139,7 @@ TEST_DATA_FULL = {
     "employee.first_name":        "אוטומציה",
     "employee.id":                "123456789",
     "employee.birth_date":        "1985-06-15",
-    "employee.mobile":            "0500000001",
+    "employee.mobile":            "0524669515",
     "employee.email":             "auto@test.com",
     "employee.address.street":    "רחוב הבדיקה 1",
     "employee.address.zip":       "61000",
@@ -223,7 +223,7 @@ EXPECTED_TEXT_FULL = [
     ("id_number_p1",      1, 115.8,  56.7, "123456789"),      # employee.id
     ("birth_date",        1,  31.2,  56.7, "15/06/1985"),     # employee.birth_date
     ("postal_code",       1,   9.7,  62.5, "61000"),          # employee.address.zip
-    ("mobile_phone",      1,   8.1,  81.7, "0500000001"),     # employee.mobile
+    ("mobile_phone",      1,   8.1,  81.7, "0524669515"),     # employee.mobile
     # Section F — Spouse
     ("spouse_last_name",  1,  83.2, 182.5, "לוי"),           # spouse.last_name
     ("spouse_first_name", 1,  54.6, 182.0, "שרה"),           # spouse.first_name

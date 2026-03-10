@@ -12,12 +12,37 @@ __pycache__/
 # Reference PDFs (binary, not source)
 searchable_20260225_092314.pdf
 form101_REAL_ORIGINAL_FILLED.pdf
+demo_full_overlay.pdf
 
-# Analysis images and debug outputs (scripts/)
+# Pipeline state files
+.pipeline_state_full.json
+
+# Test-output PDFs and HTML (generated, not source)
+בדיקה_*.pdf
+בדיקה_*.html
+טופס_101_*.pdf
+
+# Analysis images and debug outputs (scripts/ and NEW 3/)
 scripts/*.png
 scripts/*.jpg
 scripts/*.pdf
 scripts/pdf_analysis.json
+"NEW 3/"/*.png
+"NEW 3/"/check_*.pdf
+"NEW 3/"/filled_form_test.pdf
+"NEW 3/"/output_*.png
+"NEW 3/"/compare_*.png
+"NEW 3/"/crop_*.png
+"NEW 3/"/reference_*.png
+
+# Old mapping folder (superseded by NEW 3/)
+NEW2/
+
+# Per-run config (generated)
+config/
+
+# Test data (may contain PII)
+test_data/
 
 # Analysis/calibration scripts (one-time use)
 scripts/analyze_pdf.py
