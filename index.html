@@ -1430,15 +1430,15 @@
                 if (!document.getElementById(`income_${i}`)) continue;
 
                 const item = {
-                    employer: (formData.get(`add_income_${i}_employer`) || '').trim(),
-                    address: (formData.get(`add_income_${i}_address`) || '').trim(),
-                    tax_id: (formData.get(`add_income_${i}_tax_id`) || '').trim(),
-                    type: formData.get(`add_income_${i}_type`) || '',
-                    amount: formData.get(`add_income_${i}_amount`) || '',
-                    tax: formData.get(`add_income_${i}_tax`) || ''
+                    type:             formData.get(`add_income_${i}_type`) || '',
+                    payer_name:       (formData.get(`add_income_${i}_employer`) || '').trim(),
+                    address:          (formData.get(`add_income_${i}_address`) || '').trim(),
+                    deductions_file:  (formData.get(`add_income_${i}_tax_id`) || '').trim(),
+                    monthly_amount:   formData.get(`add_income_${i}_amount`) || '',
+                    tax_withheld:     formData.get(`add_income_${i}_tax`) || ''
                 };
 
-                if (item.employer || item.address || item.tax_id || item.type || item.amount || item.tax) {
+                if (item.payer_name || item.address || item.deductions_file || item.type || item.monthly_amount || item.tax_withheld) {
                     additionalIncomes.push(item);
                 }
             }
@@ -1466,22 +1466,159 @@
             const formData = new FormData(formEl);
             const data = {};
 
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
+            // ── Meta ──────────────────────────────────────────────────────────────
+            data['meta.tax_year'] = String(document.getElementById('taxYear').value || new Date().getFullYear());
 
-            data.taxYear = document.getElementById('taxYear').value || new Date().getFullYear();
-            data.signature = document.getElementById('signatureCanvas').toDataURL('image/png');
-            data.children = collectChildren(formData);
-            data.additional_incomes = collectAdditionalIncomes(formData);
-            data.changes = collectChanges(formData);
-            data.submitted_at = new Date().toISOString();
+            // ── Employer (section א) ──────────────────────────────────────────────
+            data['employer.name']            = (formData.get('employer_name') || '').trim();
+            data['employer.deductions_file'] = (formData.get('employer_tax_id') || '').trim();
+            data['employer.phone']           = (formData.get('employer_phone') || '').trim();
+            data['employer.address']         = (formData.get('employer_address') || '').trim();
 
-            // B5 fix: combine address parts into single 'address' field
-            const street = (formData.get('street') || '').trim();
+            // ── Employee (section ב) ──────────────────────────────────────────────
+            data['employee.last_name']        = (formData.get('last_name') || '').trim();
+            data['employee.first_name']       = (formData.get('first_name') || '').trim();
+            data['employee.id']               = (formData.get('id_number') || '').trim();
+            data['employee.passport']         = (formData.get('passport_number') || '').trim();
+            data['employee.birth_date']       = formData.get('birth_date') || '';
+            data['employee.immigration_date'] = formData.get('aliya_date') || '';
+
+            // Address: combine street + house_no → employee.address.street (city skipped per SKIP_KEYS)
+            const street   = (formData.get('street') || '').trim();
             const houseNum = (formData.get('house_number') || '').trim();
-            const city = (formData.get('city') || '').trim();
-            data.address = [street + (houseNum ? ' ' + houseNum : ''), city].filter(Boolean).join(', ');
+            data['employee.address.street'] = [street, houseNum].filter(Boolean).join(' ');
+            data['employee.address.zip']    = (formData.get('postal_code') || '').trim();
+            data['employee.mobile']         = (formData.get('mobile_phone') || '').trim();
+            data['employee.email']          = (formData.get('email') || '').trim();
+
+            // Gender radios → individual boolean bindKeys
+            const gender = formData.get('gender') || '';
+            data['employee.gender.male']   = gender === 'זכר';
+            data['employee.gender.female'] = gender === 'נקבה';
+
+            // Marital status → individual boolean bindKeys
+            const ms = formData.get('marital_status') || '';
+            data['employee.marital_status.married']   = ms.startsWith('נשוי');
+            data['employee.marital_status.single']    = ms.startsWith('רווק');
+            data['employee.marital_status.divorced']  = ms.startsWith('גרוש');
+            data['employee.marital_status.widowed']   = ms.startsWith('אלמן');
+            data['employee.marital_status.separated'] = ms.startsWith('פרוד');
+
+            // has_id: derived from id_number presence
+            const hasId = !!data['employee.id'];
+            data['employee.has_id.yes'] = hasId;
+            data['employee.has_id.no']  = !hasId;
+
+            // Kibbutz member
+            const kb = formData.get('kibbutz_member') || '';
+            data['employee.kibbutz_member.no']                     = kb === 'לא' || kb === '';
+            data['employee.kibbutz_member.income_transferred']     = kb === 'כן';
+            data['employee.kibbutz_member.income_not_transferred'] = false;
+
+            // Health fund
+            const hf = formData.get('health_fund') || '';
+            data['employee.health_fund.member.yes'] = !!hf;
+            data['employee.health_fund.member.no']  = !hf;
+            data['employee.health_fund.name']       = hf;
+
+            // ── Children (section ג) ──────────────────────────────────────────────
+            data['children'] = collectChildren(formData);
+
+            // ── Employment + Income main (section ד) ─────────────────────────────
+            data['employment.start_date']      = formData.get('start_date') || '';
+            data['income.main.monthly_salary'] = !!formData.get('income_type_monthly');
+            data['income.main.additional_job'] = !!formData.get('income_type_additional');
+            data['income.main.partial_salary'] = !!formData.get('income_type_partial');
+            data['income.main.daily_worker']   = !!formData.get('income_type_daily');
+            data['income.main.pension']        = !!formData.get('income_type_pension');
+            data['income.main.scholarship']    = !!formData.get('income_type_scholarship');
+
+            // ── Other income (section ה) ──────────────────────────────────────────
+            const hasOtherIncome = formData.get('has_other_income') === 'כן';
+            data['income.other.none']           = !hasOtherIncome;
+            data['income.other.monthly_salary'] = hasOtherIncome && !!formData.get('other_income_monthly');
+            data['income.other.additional_job'] = hasOtherIncome && !!formData.get('other_income_additional');
+            data['income.other.partial_salary'] = hasOtherIncome && !!formData.get('other_income_partial');
+            data['income.other.daily_worker']   = hasOtherIncome && !!formData.get('other_income_daily');
+            data['income.other.pension']        = hasOtherIncome && !!formData.get('other_income_pension');
+            data['income.other.scholarship']    = hasOtherIncome && !!formData.get('other_income_scholarship');
+
+            const creditReq = formData.get('other_income_credits') || '';
+            data['income.credit_request.get_credits_here']      = creditReq === 'request';
+            data['income.credit_request.get_credits_elsewhere'] = creditReq === 'receive';
+            data['income.other.no_training_fund'] = !!formData.get('no_study_fund_other');
+            data['income.other.no_pension']        = !!formData.get('no_pension_other');
+
+            // ── Spouse (section ו) ────────────────────────────────────────────────
+            data['spouse.last_name']        = (formData.get('spouse_last_name') || '').trim();
+            data['spouse.first_name']       = (formData.get('spouse_first_name') || '').trim();
+            data['spouse.id']               = (formData.get('spouse_id_number') || '').trim();
+            data['spouse.passport']         = (formData.get('spouse_passport_number') || '').trim();
+            data['spouse.birth_date']       = formData.get('spouse_birth_date') || '';
+            data['spouse.immigration_date'] = formData.get('spouse_aliya_date') || '';
+
+            const hasSpouse    = !!formData.get('has_spouse');
+            const spouseIncome = formData.get('spouse_has_income') || '';
+            data['spouse.has_income.none']   = !hasSpouse || spouseIncome === 'לא';
+            data['spouse.has_income.yes']    = hasSpouse && spouseIncome !== 'לא';
+            data['spouse.income_type.work']  = spouseIncome === 'עבודה';
+            data['spouse.income_type.other'] = spouseIncome === 'אחר';
+
+            // ── Credits / reliefs (section ח) ─────────────────────────────────────
+            data['credits.1_israeli_resident']                     = !!formData.get('relief_1_resident');
+            data['credits.2a_disability_100_or_blind']             = !!formData.get('relief_2_disabled');
+            data['credits.2b_monthly_benefit']                     = !!formData.get('relief_2_1_allowance');
+            data['credits.3_eligible_locality']                    = !!formData.get('relief_3_settlement');
+            data['credits.3_from_date']                            = formData.get('relief_3_date') || '';
+            data['credits.3_locality_name']                        = '';
+            data['credits.4_new_immigrant']                        = !!formData.get('relief_4_new_immigrant');
+            data['credits.4_from_date']                            = formData.get('relief_4_date') || '';
+            data['credits.4_no_income_until']                      = formData.get('relief_4_no_income_until') || '';
+            data['credits.5_spouse_no_income']                     = !!formData.get('relief_5_spouse');
+            data['credits.6_single_parent_family']                 = !!formData.get('relief_6_single_parent');
+            data['credits.7_children_in_custody']                  = !!formData.get('relief_7_children_custody');
+            data['credits.7_children_born_in_year']                = formData.get('relief_7_born') || '0';
+            data['credits.7_children_count_6_17']                  = formData.get('relief_7_age_6_17') || '0';
+            data['credits.7_children_count_18']                    = formData.get('relief_7_age_18') || '0';
+            data['credits.7_children_count_1_5']                   = String(
+                parseInt(formData.get('relief_7_age_1_2') || '0') +
+                parseInt(formData.get('relief_7_age_3') || '0') +
+                parseInt(formData.get('relief_7_age_4_5') || '0')
+            );
+            data['credits.8_children_not_in_custody']              = !!formData.get('relief_8_children_general');
+            data['credits.8_children_count_1_5']                   = String(
+                parseInt(formData.get('relief_8_age_1_2') || '0') +
+                parseInt(formData.get('relief_8_age_3') || '0') +
+                parseInt(formData.get('relief_8_age_4_5') || '0')
+            );
+            data['credits.8_children_count_6_17']                  = formData.get('relief_8_age_6_17') || '0';
+            data['credits.9_single_parent']                        = !!formData.get('relief_9_sole_parent');
+            data['credits.10_children_not_in_custody_maintenance'] = !!formData.get('relief_10_children_not_custody');
+            data['credits.11_disabled_child']                      = !!formData.get('relief_11_disabled_children');
+            data['credits.12_spousal_support']                     = !!formData.get('relief_12_alimony');
+            data['credits.13_age_16_18']                           = !!formData.get('relief_13_age_16_18');
+            data['credits.14_released_soldier_or_service']         = !!formData.get('relief_14_discharged_soldier');
+            data['credits.14_service_start']                       = formData.get('relief_14_start') || '';
+            data['credits.14_service_end']                         = formData.get('relief_14_end') || '';
+            data['credits.15_graduation']                          = !!formData.get('relief_15_academic');
+            data['credits.16_reserve_combat']                      = !!formData.get('relief_16_reserve');
+            data['credits.16_reserve_days_prev_year']              = formData.get('relief_16_days') || '';
+
+            // ── Tax coordination (section ט) ──────────────────────────────────────
+            data['tax_coordination.no_income_until_start']  = !!formData.get('t1_no_prior_income');
+            data['tax_coordination.has_additional_income']  = !!formData.get('has_tax_coordination');
+            data['tax_coordination.approval_attached']      = !!formData.get('tax_coordination_approved');
+
+            // ── Other income table (section ט — employers table) ──────────────────
+            data['other_income'] = collectAdditionalIncomes(formData);
+
+            // ── Signature / declaration (section י) ──────────────────────────────
+            data['signature.date']                = formData.get('declaration_date') || '';
+            data['signature.declaration']         = !!formData.get('confirm_declaration');
+            data['signature.applicant_signature'] = document.getElementById('signatureCanvas').toDataURL('image/png');
+
+            // ── Section Z — Changes (legacy, not in FF bindKeys) ──────────────────
+            data['changes'] = collectChanges(formData);
 
             return data;
         }
