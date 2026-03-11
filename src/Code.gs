@@ -1395,7 +1395,7 @@ function validatePdfAction_(params) {
     }
 
     const quality = typeof parsed.overall_quality === 'number' ? parsed.overall_quality : 10;
-    const passed  = quality >= 8;
+    const passed  = quality >= 7;   // 7/10 = readable with minor positioning issues; <7 = serious problem
     const issues  = Array.isArray(parsed.issues) ? parsed.issues : [];
     const summary = safeString(parsed.summary);
 

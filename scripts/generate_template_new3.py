@@ -22,6 +22,16 @@ SY = 25.4 / 72    # mm per PDF point (y)
 MARK_PT = 10        # font-size (pt) for checkmark ✓ — fits 3.94mm checkbox
 
 # ---------------------------------------------------------------------------
+# Per-field font-size overrides (pt) for fields whose JSON fontSize causes
+# text overflow into adjacent areas on the official form.
+# ---------------------------------------------------------------------------
+FIELD_FONT_OVERRIDES = {
+    # Official form box is only 13.8mm wide; 10pt overflows for all 4 main HMOs.
+    # 7pt fits 'כללית כבנות' (longest common name, ~10 chars) within the box.
+    'employee.health_fund.name':   7,
+}
+
+# ---------------------------------------------------------------------------
 # bindKey  →  ('text'|'checkbox'|'sig'|'skip', GAS_expression)
 # ---------------------------------------------------------------------------
 BIND = {
@@ -217,7 +227,7 @@ def render_field(f):
     y  = px(f['y'], 'y')
     w  = px(f['w'], 'x')
     h  = px(f['h'], 'y')
-    fs = f.get('fontSize', 9)
+    fs = FIELD_FONT_OVERRIDES.get(bk, f.get('fontSize', 9))
     align = f.get('align', 'right')
     name = f['name']
 
