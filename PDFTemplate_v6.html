@@ -30,6 +30,7 @@
   }
   function childAt(i) { return (data.children && data.children[i]) ? data.children[i] : {}; }
   function incAt(i) { return (data.additional_incomes && data.additional_incomes[i]) ? data.additional_incomes[i] : {}; }
+  function chgAt(i) { return (pdf.changes && pdf.changes[i]) ? pdf.changes[i] : {}; }
 ?>
 
 <div class="page">
@@ -194,6 +195,23 @@
   <? if (eq(pdf.spouse_has_income,'עבודה')) { ?><div class="mark" style="left:55.03mm;top:253.12mm;">&#x2713;</div><? } ?>
   <!-- הכנסת הזוג - הכנסה אחרת -->
   <? if (eq(pdf.spouse_has_income,'אחר')) { ?><div class="mark" style="left:26.46mm;top:253.47mm;">&#x2713;</div><? } ?>
+
+  <!-- Section Z — שינויים במהלך השנה -->
+  <!-- Z row 1 (top=271.15mm) -->
+  <div class="field" style="left:170.50mm;top:271.15mm;width:19.80mm;height:5.25mm;font-size:8pt;text-align:center;"><?= dmy(chgAt(0).date) ?></div>
+  <div class="field" style="left:67.00mm;top:271.15mm;width:103.50mm;height:5.25mm;font-size:8pt;text-align:right;direction:rtl;"><?= s(chgAt(0).details) ?></div>
+  <div class="field" style="left:41.00mm;top:271.15mm;width:26.00mm;height:5.25mm;font-size:8pt;text-align:center;"><?= dmy(chgAt(0).notification_date) ?></div>
+  <div class="field" style="left:10.10mm;top:271.15mm;width:30.90mm;height:5.25mm;font-size:8pt;text-align:center;"><?= s(chgAt(0).signature) ?></div>
+  <!-- Z row 2 (top=277.15mm) -->
+  <div class="field" style="left:170.50mm;top:277.15mm;width:19.80mm;height:5.25mm;font-size:8pt;text-align:center;"><?= dmy(chgAt(1).date) ?></div>
+  <div class="field" style="left:67.00mm;top:277.15mm;width:103.50mm;height:5.25mm;font-size:8pt;text-align:right;direction:rtl;"><?= s(chgAt(1).details) ?></div>
+  <div class="field" style="left:41.00mm;top:277.15mm;width:26.00mm;height:5.25mm;font-size:8pt;text-align:center;"><?= dmy(chgAt(1).notification_date) ?></div>
+  <div class="field" style="left:10.10mm;top:277.15mm;width:30.90mm;height:5.25mm;font-size:8pt;text-align:center;"><?= s(chgAt(1).signature) ?></div>
+  <!-- Z row 3 (top=283.15mm) -->
+  <div class="field" style="left:170.50mm;top:283.15mm;width:19.80mm;height:5.25mm;font-size:8pt;text-align:center;"><?= dmy(chgAt(2).date) ?></div>
+  <div class="field" style="left:67.00mm;top:283.15mm;width:103.50mm;height:5.25mm;font-size:8pt;text-align:right;direction:rtl;"><?= s(chgAt(2).details) ?></div>
+  <div class="field" style="left:41.00mm;top:283.15mm;width:26.00mm;height:5.25mm;font-size:8pt;text-align:center;"><?= dmy(chgAt(2).notification_date) ?></div>
+  <div class="field" style="left:10.10mm;top:283.15mm;width:30.90mm;height:5.25mm;font-size:8pt;text-align:center;"><?= s(chgAt(2).signature) ?></div>
 </div>
 
 <div class="page">

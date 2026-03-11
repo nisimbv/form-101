@@ -317,6 +317,7 @@ def main():
   }
   function childAt(i) { return (data.children && data.children[i]) ? data.children[i] : {}; }
   function incAt(i) { return (data.additional_incomes && data.additional_incomes[i]) ? data.additional_incomes[i] : {}; }
+  function chgAt(i) { return (pdf.changes && pdf.changes[i]) ? pdf.changes[i] : {}; }
 ?>"""
 
     footer = """\
@@ -325,6 +326,38 @@ def main():
 
     page1_html = build_page_html(fields_p0, bg1)
     page2_html = build_page_html(fields_p1, bg2)
+
+    # Section Z — שינויים במהלך השנה (3 rows × 4 cols, NOT in JSON mapping)
+    # Table bounds from PyMuPDF: x=10.1..190.3mm, y=266.4..290.4mm
+    # Column left edges (RTL): date=170.5mm, details=67.0mm, notif=41.0mm, sig=10.1mm
+    # Row tops: 270.9 / 276.9 / 282.9 mm  (6mm per row)
+    section_z_lines = ['  <!-- Section Z — שינויים במהלך השנה -->']
+    ROW_TOPS   = [271.15, 277.15, 283.15]   # top of text box in each row
+    ROW_HEIGHT = 5.25                         # mm — fits within 6mm row cell
+    COLS = [
+        # (name_in_chgAt, left_mm, width_mm, align, is_date)
+        ('date',              170.5, 19.8, 'center', True),
+        ('details',            67.0, 103.5, 'right',  False),
+        ('notification_date',  41.0, 26.0,  'center', True),
+        ('signature',          10.1, 30.9,  'center', False),
+    ]
+    for i, row_top in enumerate(ROW_TOPS):
+        section_z_lines.append(f'  <!-- Z row {i+1} (top={row_top:.2f}mm) -->')
+        for col_name, left, width, align, is_date in COLS:
+            expr = f'dmy(chgAt({i}).{col_name})' if is_date else f's(chgAt({i}).{col_name})'
+            rtl = ';direction:rtl' if align == 'right' else ''
+            section_z_lines.append(
+                f'  <div class="field" style="left:{left:.2f}mm;top:{row_top:.2f}mm;'
+                f'width:{width:.2f}mm;height:{ROW_HEIGHT:.2f}mm;'
+                f'font-size:8pt;text-align:{align}{rtl};">'
+                f'<?= {expr} ?></div>'
+            )
+    section_z_html = '\n'.join(section_z_lines)
+
+    # Insert Section Z before closing </div> of page 1
+    page1_html = page1_html.rstrip()
+    assert page1_html.endswith('</div>'), "page1_html should end with </div>"
+    page1_html = page1_html[:-len('</div>')] + '\n' + section_z_html + '\n</div>'
 
     full_html = header + '\n\n' + page1_html + '\n\n' + page2_html + '\n\n' + footer
 

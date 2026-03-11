@@ -204,7 +204,9 @@ TEST_DATA_FULL = {
     "signature.declaration": True,
     # Arrays
     "other_income": [],
-    "changes":      [],
+    "changes": [
+        {"date": "2026-02-10", "details": "שינוי כתובת", "notification_date": "2026-02-15", "signature": "טסט"},
+    ],
 }
 
 # ── Expected PDF text fields for comprehensive test ──────────────────────────
@@ -260,4 +262,15 @@ EXPECTED_MARKS_FULL = [
     ("relief_3_settlement",       2, 133.1,  24.6),  # credits.3_eligible_locality
     ("relief_5_spouse",           2, 134.1,  41.7),  # credits.5_spouse_no_income
     ("relief_7_children_custody", 2, 133.9,  54.3),  # credits.7_children_in_custody
+]
+
+# ── Section Z expected text (changes table) ──────────────────────────────────
+# (name, page, left_mm, top_mm, expected_text)
+# Positions from PyMuPDF analysis of 101LAST.pdf (2026-03-10)
+EXPECTED_TEXT_SECTION_Z = [
+    # Row 1 — changes[0]
+    ("z_date_0",         1, 170.5, 271.15, "10/02/2026"),  # change_date row 1
+    ("z_details_0",      1,  67.0, 271.15, "שינוי כתובת"),  # change_details row 1
+    ("z_notif_0",        1,  41.0, 271.15, "15/02/2026"),  # notification_date row 1
+    ("z_sig_0",          1,  10.1, 271.15, "טסט"),          # signature row 1
 ]

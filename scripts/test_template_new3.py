@@ -115,8 +115,11 @@ SAMPLE_DATA = {
     "confirm_declaration":      True,
     "declaration_date":         "2026-03-08",
     "signature":                "",
-    # Changes
-    "changes": [],
+    # Changes — Section Z (2 sample rows)
+    "changes": [
+        {"date": "2026-02-10", "details": "שינוי כתובת מגורים", "notification_date": "2026-02-15", "signature": "דוד כהן"},
+        {"date": "2026-03-01", "details": "נישואין", "notification_date": "2026-03-05", "signature": "דוד כהן"},
+    ],
 }
 
 def build_pdf_view_model(data):
@@ -156,6 +159,7 @@ def build_pdf_view_model(data):
         'spouse_aliya_date':  ss(data.get('spouse_aliya_date')),
         'has_tax_coordination':    bool(data.get('has_tax_coordination')),
         'tax_coordination_approved': bool(data.get('tax_coordination_approved')),
+        'changes':          data.get('changes', []),
         'confirm_declaration': bool(data.get('confirm_declaration')),
         'declaration_date': ss(data.get('declaration_date')),
         'signature':        ss(data.get('signature')),
@@ -260,11 +264,15 @@ def eval_gas_template(html: str, data: dict, pdf: dict, flags: dict) -> str:
         incs = data.get('additional_incomes', [])
         c = incs[i] if i < len(incs) else {}
         return AttrDict(c) if isinstance(c, dict) else c
+    def chgAt(i):
+        changes = pdf.get('changes', [])
+        c = changes[i] if i < len(changes) else {}
+        return AttrDict(c) if isinstance(c, dict) else c
 
     ctx = {
         'data': ad, 'pdf': apdf, 'flags': aflags,
         's': s, 'yes': yes, 'eq': eq, 'dmy': dmy,
-        'childAt': childAt, 'incAt': incAt,
+        'childAt': childAt, 'incAt': incAt, 'chgAt': chgAt,
         'True': True, 'False': False, 'None': None,
         'null': None, 'undefined': None,
     }

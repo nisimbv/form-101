@@ -49,6 +49,7 @@ from scripts.config import (
     EXPECTED_MARKS,
     EXPECTED_TEXT_FULL,
     EXPECTED_MARKS_FULL,
+    EXPECTED_TEXT_SECTION_Z,
     TOLERANCE_MM,
     MM_TO_PT,
 )
@@ -338,6 +339,21 @@ def verify_pdf_comprehensive(pdf_bytes: bytes) -> bool:
                 print(f"  ✅ mark/{name}  @({left_mm}mm, {top_mm}mm)")
             else:
                 print(f"  ⚠  mark/{name}  NOT confirmed @({left_mm}mm, {top_mm}mm)")
+
+        # Section Z — changes table verification (only if changes were submitted)
+        if EXPECTED_TEXT_SECTION_Z:
+            print()
+            print("  [Section Z — שינויים]")
+            for name, page_num, left_mm, top_mm, expected in EXPECTED_TEXT_SECTION_Z:
+                if page_num > len(pages):
+                    continue
+                page = pages[page_num - 1]
+                found = _text_near(page, expected, left_mm, top_mm)
+                if found:
+                    print(f"  ✅ sectionZ/{name}: '{expected}'  @({left_mm}mm, {top_mm}mm)")
+                else:
+                    print(f"  ❌ sectionZ/{name}: '{expected}' NOT found near ({left_mm}mm, {top_mm}mm)")
+                    all_ok = False
 
     return all_ok
 
