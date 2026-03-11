@@ -19,7 +19,7 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/e3efecqlm7mnpm2gns0gfan7m7e7vdut"
 
 # Make.com Scenario A — called by GAS notifyNewEmployee_() to invite a new employee
-MAKE_INVITE_WEBHOOK_URL = ""
+MAKE_INVITE_WEBHOOK_URL = "https://hook.eu1.make.com/lj01s419gqchr0hxmrnkx19j7zdjp4d8"
 
 # Public URL of the HTML form (GitHub Pages)
 FORM_PUBLIC_URL = "https://nisimbv.github.io/form-101/index_v6.html"
