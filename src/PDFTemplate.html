@@ -313,7 +313,7 @@
   <!-- אישור הצהרה (✓) -->
   <? if (yes(pdf.confirm_declaration)) { ?><div class="mark" style="left:183.80mm;top:218.19mm;">&#x2713;</div><? } ?>
   <!-- חתימת המבקש -->
-  <? if (pdf.signature) { ?><img class="sig" style="left:12.35mm;top:224.72mm;width:32.10mm;height:6.70mm;" src="<?= pdf.signature ?>"/><? } ?>
+  <? if (pdf.signature) { ?><img class="sig" style="left:12.35mm;top:224.72mm;width:32.10mm;height:6.70mm;" src="<?!= pdf.signature ?>"/><? } ?>
 </div>
 
 </body>

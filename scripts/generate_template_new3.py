@@ -255,7 +255,7 @@ def render_field(f):
                  f"width:{w:.2f}mm;height:{h:.2f}mm;")
         return (f"  <!-- {name} -->\n"
                 f"  <? if ({expr}) {{ ?>"
-                f"<img class=\"sig\" style=\"{style}\" src=\"<?= {expr} ?>\"/>"
+                f"<img class=\"sig\" style=\"{style}\" src=\"<?!= {expr} ?>\"/>"
                 f"<? }} ?>")
 
     return f"  <!-- UNHANDLED kind={kind} {name} -->"
