@@ -16,8 +16,8 @@ Run:
 
 import json, base64, os, sys
 
-SX = 0.26274      # mm per canvas pixel (x) — JSON coords are canvas pixels (800×1131)
-SY = 0.26274      # mm per canvas pixel (y) — matches calibrate_html.py MM constant
+SX = 25.4 / 72    # mm per PDF point (x) — JSON coords are PDF points (72 DPI)
+SY = 25.4 / 72    # mm per PDF point (y)
 
 MARK_PT = 10        # font-size (pt) for checkmark ✓ — fits 3.94mm checkbox
 
