@@ -424,13 +424,13 @@
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group">
-                        <label class="required">מספר תעודת זהות (9 ספרות)</label>
-                        <input type="text" name="id_number" required pattern="[0-9]{9}" maxlength="9">
+                    <div class="form-group" id="id_number_group">
+                        <label id="id_number_label" class="required">מספר תעודת זהות (9 ספרות)</label>
+                        <input type="text" name="id_number" id="id_number" required pattern="[0-9]{9}" maxlength="9">
                     </div>
-                    <div class="form-group">
-                        <label>מספר דרכון (למי שאין ת.ז)</label>
-                        <input type="text" name="passport_number">
+                    <div class="form-group" id="passport_group">
+                        <label id="passport_label">מספר דרכון (למי שאין ת.ז)</label>
+                        <input type="text" name="passport_number" id="passport_number">
                     </div>
                 </div>
 
@@ -526,11 +526,11 @@
                             <label>תושב ישראל</label>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="radio" name="israeli_resident" value="כן" id="resident_yes">
+                                    <input type="radio" name="israeli_resident" value="כן" id="resident_yes" onchange="updateIdPassportRequired()">
                                     <label for="resident_yes">כן</label>
                                 </div>
                                 <div class="checkbox-item">
-                                    <input type="radio" name="israeli_resident" value="לא" id="resident_no">
+                                    <input type="radio" name="israeli_resident" value="לא" id="resident_no" onchange="updateIdPassportRequired()">
                                     <label for="resident_no">לא</label>
                                 </div>
                             </div>
@@ -1460,6 +1460,38 @@
                 }
             }
             return changes;
+        }
+
+        function updateIdPassportRequired() {
+            const isResident = document.getElementById('resident_yes').checked;
+            const isNotResident = document.getElementById('resident_no').checked;
+
+            const idInput       = document.getElementById('id_number');
+            const passportInput = document.getElementById('passport_number');
+            const idLabel       = document.getElementById('id_number_label');
+            const passportLabel = document.getElementById('passport_label');
+
+            if (isNotResident) {
+                // לא תושב — דרכון חובה, ת.ז לא חובה
+                idInput.required = false;
+                idInput.removeAttribute('required');
+                passportInput.required = true;
+                passportInput.setAttribute('required', '');
+                idLabel.classList.remove('required');
+                passportLabel.classList.add('required');
+                idLabel.textContent       = 'מספר תעודת זהות (9 ספרות)';
+                passportLabel.textContent = 'מספר דרכון';
+            } else {
+                // תושב ישראל (כן או לא נבחר) — ת.ז חובה, דרכון לא חובה
+                idInput.required = true;
+                idInput.setAttribute('required', '');
+                passportInput.required = false;
+                passportInput.removeAttribute('required');
+                idLabel.classList.add('required');
+                passportLabel.classList.remove('required');
+                idLabel.textContent       = 'מספר תעודת זהות (9 ספרות)';
+                passportLabel.textContent = 'מספר דרכון (למי שאין ת.ז)';
+            }
         }
 
         function buildPayload(formEl) {
