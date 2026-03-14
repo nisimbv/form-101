@@ -26,7 +26,7 @@ const CONFIG = {
 
   // מומלץ מאוד: הדבק כאן את ה-ID של ה-Spreadsheet
   // אם נשאר ריק, הסקריפט ינסה להשתמש ב"Active Spreadsheet" (בדרך כלל רק בפרויקט Bound)
-  SPREADSHEET_ID: '',
+  SPREADSHEET_ID: '1VFSgcmNagnsAjXPsSDOgR9fadkjrbacK3beXCw2VG9Q',
 
   // תיקיית אב ב-Drive לשמירת PDFs
   MAIN_FOLDER: 'HR_101',
@@ -647,6 +647,8 @@ const FF_HEADERS = [
   'employee.immigration_date',
   'employee.passport',
   'employee.address.street',
+  'employee.address.house_no',
+  'employee.address.city',
   'employee.address.zip',
   'employee.mobile',
   'employee.email',
@@ -768,6 +770,142 @@ const FF_HEADERS = [
   '_op.status',
 ];
 
+// Hebrew display labels for FF_HEADERS (same order, same length)
+const FF_HEADER_LABELS = [
+  'שנת מס',
+  'מספר תיק ניכויים',
+  'שם מעסיק',
+  'כתובת מעסיק',
+  'טלפון מעסיק',
+  'מספר זהות',
+  'שם משפחה',
+  'שם פרטי',
+  'תאריך לידה',
+  'תאריך עלייה',
+  'מספר דרכון',
+  'רחוב',
+  'מספר בית',
+  'עיר/ישוב',
+  'מיקוד',
+  'טלפון נייד',
+  'דוא"ל',
+  'מגדר - זכר',
+  'מגדר - נקבה',
+  'נשוי/ה',
+  'רווק/ה',
+  'גרוש/ה',
+  'אלמן/ה',
+  'פרוד/ה',
+  'יש תעודת זהות',
+  'אין תעודת זהות',
+  'לא חבר קיבוץ',
+  'הכנסה מועברת לקיבוץ',
+  'הכנסה לא מועברת לקיבוץ',
+  'חבר קופת חולים',
+  'לא חבר קופת חולים',
+  'שם קופת חולים',
+  'שם ילד 1',
+  'ת.ז ילד 1',
+  'ת. לידה ילד 1',
+  'שם ילד 2',
+  'ת.ז ילד 2',
+  'ת. לידה ילד 2',
+  'משמורת ילד 1',
+  'משמורת ילד 2',
+  'קצבה ילד 2',
+  'קצבה ילד 1',
+  'קצבה ילד 3',
+  'משמורת ילד 3',
+  'שם ילד 3',
+  'ת.ז ילד 3',
+  'ת. לידה ילד 3',
+  'שם ילד 4',
+  'ת.ז ילד 4',
+  'ת. לידה ילד 4',
+  'משמורת ילד 4',
+  'קצבה ילד 4',
+  'שכר חודשי רגיל',
+  'עבודה נוספת',
+  'שכר חלקי',
+  'עובד יומי',
+  'קצבה',
+  'מלגה',
+  'תאריך תחילת עבודה',
+  'אין הכנסות אחרות',
+  'הכנסה אחרת - שכר חודשי',
+  'הכנסה אחרת - עבודה נוספת',
+  'הכנסה אחרת - שכר חלקי',
+  'הכנסה אחרת - עובד יומי',
+  'הכנסה אחרת - קצבה',
+  'הכנסה אחרת - מלגה',
+  'בקשת זיכוי - כאן',
+  'בקשת זיכוי - במקום אחר',
+  'ללא קרן השתלמות',
+  'ללא פנסיה',
+  'ת.ז בן/בת זוג',
+  'דרכון בן/בת זוג',
+  'שם משפחה בן/בת זוג',
+  'שם פרטי בן/בת זוג',
+  'ת. לידה בן/בת זוג',
+  'תאריך עלייה בן/בת זוג',
+  'אין הכנסה לבן/בת זוג',
+  'יש הכנסה לבן/בת זוג',
+  'הכנסת בן/בת זוג - עבודה',
+  'הכנסת בן/בת זוג - אחר',
+  'זכאות 1 - תושב ישראל',
+  'זכאות 2א - נכות 100%',
+  'זכאות 2ב - גמלה חודשית',
+  'זכאות 3 - ישוב מזכה',
+  'זכאות 3 - מתאריך',
+  'זכאות 3 - שם ישוב',
+  'זכאות 4 - עולה חדש',
+  'זכאות 4 - מתאריך',
+  'זכאות 4 - ללא הכנסה עד',
+  'זכאות 5 - בן/בת זוג ללא הכנסה',
+  'זכאות 6 - משפחה חד הורית',
+  'זכאות 7 - ילדים במשמורת',
+  'זכאות 7 - ילד שנולד בשנה',
+  'זכאות 7 - ילדים 6-17',
+  'זכאות 7 - ילדים 18+',
+  'זכאות 7 - ילדים 1-5',
+  'זכאות 8 - ילדים לא במשמורת',
+  'זכאות 8 - ילדים 1-5',
+  'זכאות 8 - ילדים 6-17',
+  'זכאות 9 - הורה יחיד',
+  'זכאות 10 - מזונות',
+  'זכאות 11 - ילד עם מוגבלות',
+  'זכאות 12 - מזונות לבן/בת זוג',
+  'זכאות 13 - גיל 16-18',
+  'זכאות 14 - שחרור שירות',
+  'זכאות 14 - תחילת שירות',
+  'זכאות 14 - סיום שירות',
+  'זכאות 15 - סיום לימודים',
+  'זכאות 16 - מילואים לוחמים',
+  'זכאות 16 - ימי מילואים שנה קודמת',
+  'תיאום מס - ללא הכנסה עד תחילה',
+  'תיאום מס - יש הכנסה נוספת',
+  'תיאום מס - אישור מצורף',
+  'הכנסה אחרת 1 - סוג',
+  'הכנסה אחרת 1 - שם משלם',
+  'הכנסה אחרת 1 - כתובת',
+  'הכנסה אחרת 1 - תיק ניכויים',
+  'הכנסה אחרת 1 - סכום חודשי',
+  'הכנסה אחרת 1 - מס שנוכה',
+  'הכנסה אחרת 2 - סוג',
+  'הכנסה אחרת 2 - שם משלם',
+  'הכנסה אחרת 2 - כתובת',
+  'הכנסה אחרת 2 - תיק ניכויים',
+  'הכנסה אחרת 2 - סכום חודשי',
+  'הכנסה אחרת 2 - מס שנוכה',
+  'תאריך חתימה',
+  'הצהרה',
+  'חתימה',
+  'זמן הגשה',
+  'קישור PDF',
+  'מזהה קובץ',
+  'סטטוס',
+];
+
 /**
  * Build a flat FF row directly from bindKey-named payload `data`.
  * No translation needed — frontend sends bindKey names 1:1.
@@ -825,15 +963,15 @@ function saveToSheetFF_(data, pdfViewModel) {
   let sheet = ss.getSheetByName(FF_TAB);
   if (!sheet) sheet = ss.insertSheet(FF_TAB);
 
-  // Ensure header row matches FF_HEADERS exactly
+  // Ensure header row matches FF_HEADER_LABELS exactly
   const existingHeaders = sheet.getLastRow() > 0
     ? sheet.getRange(1, 1, 1, FF_HEADERS.length).getValues()[0]
     : [];
-  if (JSON.stringify(existingHeaders) !== JSON.stringify(FF_HEADERS)) {
+  if (JSON.stringify(existingHeaders) !== JSON.stringify(FF_HEADER_LABELS)) {
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(FF_HEADERS);
+      sheet.appendRow(FF_HEADER_LABELS);
     } else {
-      sheet.getRange(1, 1, 1, FF_HEADERS.length).setValues([FF_HEADERS]);
+      sheet.getRange(1, 1, 1, FF_HEADERS.length).setValues([FF_HEADER_LABELS]);
     }
   }
 
@@ -947,6 +1085,8 @@ function buildPdfViewModel(data) {
     birth_date:      d('employee.birth_date'),
     aliyah_date:     d('employee.immigration_date'),
     address:         d('employee.address.street'),
+    house_no:        d('employee.address.house_no'),
+    city:            d('employee.address.city'),
     postal_code:     d('employee.address.zip'),
     mobile_phone:    d('employee.mobile'),
     email:           d('employee.email'),
@@ -1086,6 +1226,8 @@ function sendToMake(data, pdfFile, rowNum) {
       birth_date:   safeString(data['employee.birth_date']),
       aliya_date:   safeString(data['employee.immigration_date']),
       address:      safeString(data['employee.address.street']),
+      house_no:     safeString(data['employee.address.house_no']),
+      city:         safeString(data['employee.address.city']),
       postal_code:  safeString(data['employee.address.zip']),
       mobile_phone: (function(p){ return p.startsWith('0') ? p.slice(1) : p; })(safeString(data['employee.mobile'])),
       email:        safeString(data['employee.email']),

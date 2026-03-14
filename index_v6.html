@@ -440,8 +440,8 @@
                         <input type="date" name="birth_date" required>
                     </div>
                     <div class="form-group">
-                        <label>תאריך עליה</label>
-                        <input type="date" name="aliya_date">
+                        <label id="aliya_date_label">תאריך עליה</label>
+                        <input type="date" name="aliya_date" id="aliya_date">
                     </div>
                 </div>
 
@@ -1471,14 +1471,20 @@
             const idLabel       = document.getElementById('id_number_label');
             const passportLabel = document.getElementById('passport_label');
 
+            const aliyaInput = document.getElementById('aliya_date');
+            const aliyaLabel = document.getElementById('aliya_date_label');
+
             if (isNotResident) {
-                // לא תושב — דרכון חובה, ת.ז לא חובה
+                // לא תושב — דרכון חובה, ת.ז לא חובה, תאריך עליה חובה
                 idInput.required = false;
                 idInput.removeAttribute('required');
                 passportInput.required = true;
                 passportInput.setAttribute('required', '');
+                aliyaInput.required = true;
+                aliyaInput.setAttribute('required', '');
                 idLabel.classList.remove('required');
                 passportLabel.classList.add('required');
+                aliyaLabel.classList.add('required');
                 idLabel.textContent       = 'מספר תעודת זהות (9 ספרות)';
                 passportLabel.textContent = 'מספר דרכון';
             } else {
@@ -1487,8 +1493,11 @@
                 idInput.setAttribute('required', '');
                 passportInput.required = false;
                 passportInput.removeAttribute('required');
+                aliyaInput.required = false;
+                aliyaInput.removeAttribute('required');
                 idLabel.classList.add('required');
                 passportLabel.classList.remove('required');
+                aliyaLabel.classList.remove('required');
                 idLabel.textContent       = 'מספר תעודת זהות (9 ספרות)';
                 passportLabel.textContent = 'מספר דרכון (למי שאין ת.ז)';
             }
@@ -1520,6 +1529,7 @@
             const houseNum = (formData.get('house_number') || '').trim();
             data['employee.address.street']   = street;
             data['employee.address.house_no'] = houseNum;
+            data['employee.address.city']     = (formData.get('city') || '').trim();
             data['employee.address.zip']    = (formData.get('postal_code') || '').trim();
             data['employee.mobile']         = (formData.get('mobile_phone') || '').trim();
             data['employee.email']          = (formData.get('email') || '').trim();
@@ -1697,11 +1707,11 @@
                     throw new Error(result.message || 'שגיאה בשליחת הטופס');
                 }
 
-                document.getElementById('successMessage').classList.add('active');
                 formEl.reset();
                 clearSignature();
                 resetDynamicSections();
                 resetFormRuntimeState();
+                document.getElementById('successMessage').classList.add('active');
             } catch (error) {
                 document.getElementById('errorMessage').classList.add('active');
                 document.getElementById('errorText').textContent = error.message || 'אירעה שגיאה לא צפויה';

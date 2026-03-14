@@ -31,6 +31,18 @@ FIELD_FONT_OVERRIDES = {
     'employee.health_fund.name':   7,
 }
 
+# Extra CSS injected into specific field's style attribute
+FIELD_EXTRA_STYLE = {
+    'meta.tax_year': 'letter-spacing:0.2mm;',
+}
+
+# Per-page expression overrides: (bindKey, page_index) → GAS expression
+# Used when the same bindKey needs different logic on different pages.
+FIELD_EXPR_PAGE_OVERRIDES = {
+    # Page 2: show passport number when no Israeli ID (non-resident)
+    ('employee.id', 1): 's(pdf.id_number) !== "" ? s(pdf.id_number) : s(pdf.passport_number)',
+}
+
 # ---------------------------------------------------------------------------
 # bindKey  →  ('text'|'checkbox'|'sig'|'skip', GAS_expression)
 # ---------------------------------------------------------------------------
@@ -52,13 +64,13 @@ BIND = {
     'employee.immigration_date':        ('text', "dmy(pdf.aliyah_date)"),
     'employee.passport':                ('text', "s(pdf.passport_number)"),
 
-    # address: frontend combines street+house+city into a single string
-    'employee.address.house_no':        ('skip', ''),
+    # address: street and house_no are separate PDF fields
+    'employee.address.house_no':        ('text', "s(pdf.house_no)"),
     'employee.address.street':          ('text', "s(pdf.address)"),
-    'employee.address.city':            ('skip', ''),
+    'employee.address.city':            ('text', "s(pdf.city)"),
     'employee.address.zip':             ('text', "s(pdf.postal_code)"),
 
-    'employee.phone':                   ('text', "s(data.phone || '')"),
+    'employee.phone':                   ('text', "s(data['employee.phone'] || '')"),
     'employee.mobile':                  ('text', "s(pdf.mobile_phone)"),
     'employee.email':                   ('text', "s(pdf.email)"),
 
@@ -214,7 +226,7 @@ def px(v, axis):
     """Convert PDF points to mm."""
     return v * (SX if axis == 'x' else SY)
 
-def render_field(f):
+def render_field(f, page_index=0):
     bk = f.get('bindKey', '')
     kind, expr = BIND.get(bk, (None, None))
 
@@ -222,6 +234,11 @@ def render_field(f):
         return f"  <!-- UNMAPPED: {f['name']} bindKey={bk} -->"
     if kind == 'skip':
         return f"  <!-- SKIP: {f['name']} bindKey={bk} -->"
+
+    # Apply per-page expression override if defined
+    page_override = FIELD_EXPR_PAGE_OVERRIDES.get((bk, page_index))
+    if page_override is not None:
+        expr = page_override
 
     x  = px(f['x'], 'x')
     y  = px(f['y'], 'y')
@@ -232,10 +249,11 @@ def render_field(f):
     name = f['name']
 
     if kind == 'text':
+        extra = FIELD_EXTRA_STYLE.get(bk, '')
         style = (f"left:{x:.2f}mm;top:{y:.2f}mm;"
                  f"width:{w:.2f}mm;height:{h:.2f}mm;"
                  f"font-size:{fs}pt;text-align:{align};"
-                 f"direction:rtl;")
+                 f"direction:rtl;{extra}")
         return (f"  <!-- {name} -->\n"
                 f"  <div class=\"field\" style=\"{style}\"><?= {expr} ?></div>")
 
@@ -261,11 +279,11 @@ def render_field(f):
     return f"  <!-- UNHANDLED kind={kind} {name} -->"
 
 
-def build_page_html(fields, bg_b64):
+def build_page_html(fields, bg_b64, page_index=0):
     lines = [f'<div class="page">']
     lines.append(f'  <img class="bg" src="data:image/jpeg;base64,{bg_b64}" />')
     for f in fields:
-        lines.append(render_field(f))
+        lines.append(render_field(f, page_index))
     lines.append('</div>')
     return '\n'.join(lines)
 
@@ -334,8 +352,8 @@ def main():
 </body>
 </html>"""
 
-    page1_html = build_page_html(fields_p0, bg1)
-    page2_html = build_page_html(fields_p1, bg2)
+    page1_html = build_page_html(fields_p0, bg1, page_index=0)
+    page2_html = build_page_html(fields_p1, bg2, page_index=1)
 
     # Section Z — שינויים במהלך השנה (3 rows × 4 cols, NOT in JSON mapping)
     # Table bounds from PyMuPDF: x=10.1..190.3mm, y=266.4..290.4mm
