@@ -21,10 +21,8 @@ GEN_PY   = os.path.join(ROOT, 'scripts', 'generate_template_new3.py')
 TMPL_HTM = os.path.join(ROOT, 'src', 'PDFTemplate.html')
 CODE_GS  = os.path.join(ROOT, 'src', 'Code.gs')
 
-# bindKeys intentionally excluded (combined on frontend / not stored)
+# bindKeys intentionally excluded (not stored / handled separately)
 SKIP_KEYS = {
-    'employee.address.house_no',   # merged with street
-    'employee.address.city',       # merged with street
     'employee.phone',              # landline — only mobile stored
 }
 
