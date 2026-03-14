@@ -400,7 +400,7 @@
                     </div>
                     <div class="form-group">
                         <label>מספר טלפון</label>
-                        <input type="tel" name="employer_phone">
+                        <input type="tel" name="employer_phone" autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -1515,10 +1515,11 @@
             data['employee.birth_date']       = formData.get('birth_date') || '';
             data['employee.immigration_date'] = formData.get('aliya_date') || '';
 
-            // Address: combine street + house_no → employee.address.street (city skipped per SKIP_KEYS)
+            // Address: street and house_no are separate PDF fields
             const street   = (formData.get('street') || '').trim();
             const houseNum = (formData.get('house_number') || '').trim();
-            data['employee.address.street'] = [street, houseNum].filter(Boolean).join(' ');
+            data['employee.address.street']   = street;
+            data['employee.address.house_no'] = houseNum;
             data['employee.address.zip']    = (formData.get('postal_code') || '').trim();
             data['employee.mobile']         = (formData.get('mobile_phone') || '').trim();
             data['employee.email']          = (formData.get('email') || '').trim();
