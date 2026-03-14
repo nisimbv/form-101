@@ -1,0 +1,115 @@
+{
+  "name": "form101_invite",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_ME_WEBHOOK_HOOK_ID_A",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "expect": [
+          { "name": "action",   "type": "text",   "label": "Action" },
+          { "name": "sentAt",   "type": "text",   "label": "Sent At" },
+          { "name": "rowNum",   "type": "number", "label": "Row Number" },
+          {
+            "name": "employee",
+            "type": "collection",
+            "label": "Employee",
+            "spec": [
+              { "name": "name",  "type": "text", "label": "Name" },
+              { "name": "phone", "type": "text", "label": "Phone" }
+            ]
+          },
+          { "name": "employer",  "type": "text", "label": "Employer" },
+          { "name": "taxYear",   "type": "text", "label": "Tax Year" },
+          { "name": "formUrl",   "type": "text", "label": "Form URL" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:SetVariables",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "variables": [
+          {
+            "name": "wa_phone",
+            "value": "972{{substring(1.employee.phone; 1)}}"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 }
+      }
+    },
+    {
+      "id": 3,
+      "module": "whatsapp-business:ActionCreateAMessage",
+      "version": 1,
+      "parameters": {
+        "connectionId": "REPLACE_ME_WA_CONNECTION_ID"
+      },
+      "mapper": {
+        "to": "{{2.wa_phone}}",
+        "type": "template",
+        "template": {
+          "name": "form_101_invite",
+          "language": { "code": "he" },
+          "components": [
+            {
+              "type": "body",
+              "parameters": [
+                { "type": "text", "text": "{{1.employee.name}}" },
+                { "type": "text", "text": "{{1.employer}}" },
+                { "type": "text", "text": "{{1.taxYear}}" },
+                { "type": "text", "text": "{{1.formUrl}}" }
+              ]
+            }
+          ]
+        }
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 0 },
+        "restore": {
+          "connectionId": { "label": "REPLACE_ME_WA_CONNECTION_LABEL" }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "_comment": {
+    "placeholders": {
+      "REPLACE_ME_WEBHOOK_HOOK_ID_A": "Replaced automatically when you create the webhook in Make",
+      "REPLACE_ME_WA_CONNECTION_ID": "Your WhatsApp Business connection ID in Make",
+      "REPLACE_ME_WA_CONNECTION_LABEL": "Display name of your WhatsApp Business connection"
+    },
+    "whatsapp_template": {
+      "name": "form_101_invite",
+      "language": "he",
+      "body_params": ["employee_name", "employer_name", "tax_year", "form_url"],
+      "example_body": "שלום {{1}},\nהמעסיק {{2}} מזמין אותך למלא טופס 101 לשנת {{3}}.\nלחץ כאן: {{4}}"
+    }
+  }
+}
