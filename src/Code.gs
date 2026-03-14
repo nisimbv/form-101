@@ -302,7 +302,14 @@ function doPost(e) {
       Logger.log('FF tab error (non-fatal): ' + String(ffErr));
     }
 
-    // 4) Webhook ל-Make (אם הוגדר)
+    // 4) ארגון תיקיית עובד ב-Drive (PDF + קבצים מצורפים)
+    try {
+      organizeEmployeeFolder_(data, pdfFile);
+    } catch (folderErr) {
+      Logger.log('organizeEmployeeFolder_ error (non-fatal): ' + String(folderErr));
+    }
+
+    // 5) Webhook ל-Make (אם הוגדר)
     sendToMake(data, pdfFile, rowNum);
 
     output.setContent(JSON.stringify({
@@ -1182,6 +1189,63 @@ function buildPdfViewModel(data) {
 /* ==============================
    Make Webhook
 ============================== */
+
+/* ==============================
+   Employee Drive Folder
+============================== */
+
+/**
+ * Creates (or reuses) a per-employee subfolder inside the HR root folder,
+ * copies the generated PDF there, and saves any uploaded files (ID scan,
+ * discharge certificate).
+ *
+ * Root folder: HR_EMPLOYEES_ROOT_ID (1AiVyavfbhc3S6D2ZPJ1JHfg4TUovfCLt)
+ * Subfolder:   {last_name}_{first_name}_{id_or_passport}/
+ */
+var HR_EMPLOYEES_ROOT_ID = '1AiVyavfbhc3S6D2ZPJ1JHfg4TUovfCLt';
+
+function organizeEmployeeFolder_(data, pdfFile) {
+  var rootFolder = DriveApp.getFolderById(HR_EMPLOYEES_ROOT_ID);
+
+  var lastName  = safeString(data['employee.last_name']);
+  var firstName = safeString(data['employee.first_name']);
+  var idOrPass  = safeString(data['employee.id']) || safeString(data['employee.passport']);
+  var folderName = (lastName + '_' + firstName + '_' + idOrPass).replace(/[\/\\?%*:|"<>]/g, '_');
+
+  // Get or create the employee subfolder
+  var iter = rootFolder.getFoldersByName(folderName);
+  var folder = iter.hasNext() ? iter.next() : rootFolder.createFolder(folderName);
+
+  // Copy the Form 101 PDF into the employee folder
+  if (pdfFile) {
+    pdfFile.makeCopy(pdfFile.getName(), folder);
+  }
+
+  // Save base64-encoded uploaded files
+  var FILE_MIME = {
+    'image/jpeg': '.jpg', 'image/png': '.png',
+    'image/gif': '.gif', 'image/webp': '.webp',
+    'application/pdf': '.pdf'
+  };
+
+  function saveBase64_(key, baseName) {
+    var raw = data[key];
+    if (!raw) return;
+    var m = String(raw).match(/^data:([^;]+);base64,(.+)$/);
+    if (!m) return;
+    var mimeType = m[1];
+    var b64      = m[2];
+    var ext      = FILE_MIME[mimeType] || '.bin';
+    var blob = Utilities.newBlob(Utilities.base64Decode(b64), mimeType, baseName + ext);
+    folder.createFile(blob);
+    Logger.log('Saved ' + baseName + ext + ' to folder ' + folderName);
+  }
+
+  saveBase64_('employee.id_scan',        'תעודת_זהות_וספח');
+  saveBase64_('employee.discharge_cert', 'תעודת_שחרור');
+
+  return folder.getUrl();
+}
 
 function sendToMake(data, pdfFile, rowNum) {
   if (!CONFIG.MAKE_WEBHOOK_URL || !String(CONFIG.MAKE_WEBHOOK_URL).trim()) return;

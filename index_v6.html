@@ -355,6 +355,32 @@
             font-style: italic;
             margin-top: 4px;
         }
+
+        /* File upload fields */
+        .file-upload-group {
+            background: #f8f9ff;
+            border: 1px dashed #aab;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 6px;
+        }
+        .file-upload-group label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .file-upload-group input[type="file"] {
+            font-size: 12px;
+            font-family: inherit;
+            width: 100%;
+        }
+        .file-hint {
+            font-size: 10px;
+            color: #888;
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -432,6 +458,11 @@
                         <label id="passport_label">מספר דרכון (למי שאין ת.ז)</label>
                         <input type="text" name="passport_number" id="passport_number">
                     </div>
+                </div>
+                <div class="file-upload-group">
+                    <label id="id_scan_label">צילום תעודת זהות וספח</label>
+                    <input type="file" name="id_scan" id="id_scan" accept="image/*,application/pdf">
+                    <div class="file-hint">העלה תמונה (JPG/PNG) או PDF — גודל מקסימלי 5MB</div>
                 </div>
 
                 <div class="form-row">
@@ -998,10 +1029,11 @@
                     <!-- 14. חייל משוחרר -->
                     <div class="subsection">
                         <div class="checkbox-item">
-                            <input type="checkbox" name="relief_14_discharged_soldier" id="relief_14">
+                            <input type="checkbox" name="relief_14_discharged_soldier" id="relief_14"
+                                   onchange="toggleDischargeCert(this.checked)">
                             <label for="relief_14"><strong>14.</strong> אני חייל/ת משוחרר/ת / שירתתי בשירות לאומי</label>
                         </div>
-                        <div style="margin-right: 30px; margin-top: 8px;">
+                        <div id="relief_14_details" style="margin-right: 30px; margin-top: 8px;">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>תאריך תחילת השירות</label>
@@ -1012,7 +1044,11 @@
                                     <input type="date" name="relief_14_end">
                                 </div>
                             </div>
-                            <div class="note">מצורף צילום של תעודת שחרור/סיום שירות</div>
+                            <div id="discharge_cert_group" class="file-upload-group" style="display:none;margin-top:6px;">
+                                <label>צילום תעודת שחרור / סיום שירות</label>
+                                <input type="file" name="discharge_cert" id="discharge_cert" accept="image/*,application/pdf">
+                                <div class="file-hint">העלה תמונה (JPG/PNG) או PDF — גודל מקסימלי 5MB</div>
+                            </div>
                         </div>
                     </div>
 
@@ -1213,12 +1249,29 @@
             setupEventListeners();
         });
 
+        function toggleDischargeCert(checked) {
+            const group = document.getElementById('discharge_cert_group');
+            if (group) group.style.display = checked ? 'block' : 'none';
+        }
+
         function resetFormRuntimeState() {
             document.getElementById('declarationDate').valueAsDate = new Date();
             hideMessages();
             document.getElementById('otherIncomeDetails').style.display = 'none';
             document.getElementById('spouseDetails').style.display = 'none';
             document.getElementById('taxCoordinationDetails').style.display = 'none';
+            document.getElementById('discharge_cert_group').style.display = 'none';
+        }
+
+        async function readFileAsBase64(file) {
+            if (!file || file.size === 0) return null;
+            if (file.size > 5 * 1024 * 1024) throw new Error('הקובץ "' + file.name + '" גדול מ-5MB');
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload  = e => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('שגיאה בקריאת הקובץ ' + file.name));
+                reader.readAsDataURL(file);
+            });
         }
 
         function hideMessages() {
@@ -1474,6 +1527,8 @@
             const aliyaInput = document.getElementById('aliya_date');
             const aliyaLabel = document.getElementById('aliya_date_label');
 
+            const idScanLabel = document.getElementById('id_scan_label');
+
             if (isNotResident) {
                 // לא תושב — דרכון חובה, ת.ז לא חובה, תאריך עליה חובה
                 idInput.required = false;
@@ -1487,6 +1542,7 @@
                 aliyaLabel.classList.add('required');
                 idLabel.textContent       = 'מספר תעודת זהות (9 ספרות)';
                 passportLabel.textContent = 'מספר דרכון';
+                if (idScanLabel) idScanLabel.textContent = 'צילום דרכון ואישור שהייה בישראל';
             } else {
                 // תושב ישראל (כן או לא נבחר) — ת.ז חובה, דרכון לא חובה
                 idInput.required = true;
@@ -1499,6 +1555,7 @@
                 passportLabel.classList.remove('required');
                 aliyaLabel.classList.remove('required');
                 idLabel.textContent       = 'מספר תעודת זהות (9 ספרות)';
+                if (idScanLabel) idScanLabel.textContent = 'צילום תעודת זהות וספח';
                 passportLabel.textContent = 'מספר דרכון (למי שאין ת.ז)';
             }
         }
@@ -1687,6 +1744,14 @@
 
             const formEl = e.target;
             const data = buildPayload(formEl);
+
+            // Attach file uploads as base64
+            const idScanFile      = formEl.querySelector('input[name="id_scan"]')?.files[0];
+            const dischargeCertFile = formEl.querySelector('input[name="discharge_cert"]')?.files[0];
+            const idScan      = await readFileAsBase64(idScanFile).catch(err => { throw err; });
+            const dischargeCert = await readFileAsBase64(dischargeCertFile).catch(err => { throw err; });
+            if (idScan)       data['employee.id_scan']        = idScan;
+            if (dischargeCert) data['employee.discharge_cert'] = dischargeCert;
 
             document.getElementById('loadingIndicator').classList.add('active');
             document.getElementById('submitBtn').disabled = true;
