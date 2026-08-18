@@ -1685,6 +1685,9 @@
                 parseInt(formData.get('relief_7_age_3') || '0') +
                 parseInt(formData.get('relief_7_age_4_5') || '0')
             );
+            data['credits.7_children_age_1_2']                     = formData.get('relief_7_age_1_2') || '0';
+            data['credits.7_children_age_3']                       = formData.get('relief_7_age_3') || '0';
+            data['credits.7_children_age_4_5']                     = formData.get('relief_7_age_4_5') || '0';
             data['credits.8_children_not_in_custody']              = !!formData.get('relief_8_children_general');
             data['credits.8_children_count_1_5']                   = String(
                 parseInt(formData.get('relief_8_age_1_2') || '0') +
@@ -1692,6 +1695,10 @@
                 parseInt(formData.get('relief_8_age_4_5') || '0')
             );
             data['credits.8_children_count_6_17']                  = formData.get('relief_8_age_6_17') || '0';
+            data['credits.8_children_born_in_year']                = formData.get('relief_8_born') || '0';
+            data['credits.8_children_age_1_2']                     = formData.get('relief_8_age_1_2') || '0';
+            data['credits.8_children_age_3']                       = formData.get('relief_8_age_3') || '0';
+            data['credits.8_children_age_4_5']                     = formData.get('relief_8_age_4_5') || '0';
             data['credits.9_single_parent']                        = !!formData.get('relief_9_sole_parent');
             data['credits.10_children_not_in_custody_maintenance'] = !!formData.get('relief_10_children_not_custody');
             data['credits.11_disabled_child']                      = !!formData.get('relief_11_disabled_children');
