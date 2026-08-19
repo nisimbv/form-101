@@ -244,6 +244,10 @@
             background: white;
             display: block;
             margin: 10px 0;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 3 / 1;
+            height: auto;
         }
 
         .explanations {
@@ -1334,12 +1338,18 @@
             signaturePad = ctx;
         }
 
+        function canvasPoint(canvas, e) {
+            // ממיר קואורדינטות מסך לקואורדינטות קנבס — חיוני בנייד שבו הקנבס מוקטן ע"י CSS
+            const rect = canvas.getBoundingClientRect();
+            const sx = canvas.width  / rect.width;
+            const sy = canvas.height / rect.height;
+            return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+        }
+
         function startDrawing(e) {
             isDrawing = true;
             const canvas = document.getElementById('signatureCanvas');
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const { x, y } = canvasPoint(canvas, e);
 
             signaturePad.beginPath();
             signaturePad.moveTo(x, y);
@@ -1350,9 +1360,7 @@
             e.preventDefault();
 
             const canvas = document.getElementById('signatureCanvas');
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const { x, y } = canvasPoint(canvas, e);
 
             signaturePad.lineTo(x, y);
             signaturePad.strokeStyle = '#000';
