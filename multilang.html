@@ -1263,7 +1263,27 @@
             addChild();
             addAdditionalIncome();
             setupEventListeners();
+            applyLinkPrefill();
         });
+
+        /* 09/10/2026 — קישור אישי ממרכז הבקשות: ?ref=TJ-...&emp=0480&fn=&ln=&phone=&start=YYYY-MM-DD&en=&et=&ea=&ep=
+           ממלא רק שדות ריקים; ref/emp נשלחים עם הטופס כדי שמרכז הבקשות ישייך אותו לבקשה. */
+        const LINK_PARAMS = (function() {
+            try { return new URLSearchParams(window.location.search); } catch (e) { return new URLSearchParams(''); }
+        })();
+        function applyLinkPrefill() {
+            const map = { fn: 'first_name', ln: 'last_name', phone: 'mobile_phone', start: 'start_date',
+                          en: 'employer_name', et: 'employer_tax_id', ea: 'employer_address', ep: 'employer_phone' };
+            Object.keys(map).forEach(function(k) {
+                const v = (LINK_PARAMS.get(k) || '').trim();
+                const el = document.querySelector('[name="' + map[k] + '"]');
+                if (!v || !el || el.value) return;
+                if (k === 'start' && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+                el.value = v.slice(0, 120);
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
 
         function toggleDischargeCert(checked) {
             const group = document.getElementById('discharge_cert_group');
@@ -1586,6 +1606,10 @@
 
             // ── Meta ──────────────────────────────────────────────────────────────
             data['meta.tax_year'] = String(document.getElementById('taxYear').value || new Date().getFullYear());
+            const linkRef = (LINK_PARAMS.get('ref') || '').trim();
+            const linkEmp = (LINK_PARAMS.get('emp') || '').trim();
+            if (/^TJ-\d{6}-\d{3}$/.test(linkRef)) data['meta.ref'] = linkRef;
+            if (/^[0-9Z]{1,6}$/i.test(linkEmp)) data['meta.emp'] = linkEmp;
 
             // ── Employer (section א) ──────────────────────────────────────────────
             data['employer.name']            = (formData.get('employer_name') || '').trim();
