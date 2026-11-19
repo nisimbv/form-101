@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[DEMO רב-לשוני] טופס 101 דיגיטלי - V6</title>
+    <title>טופס 101 — טן ג'ובס | TenJobs</title>
+    <meta property="og:title" content="טופס 101 — טן ג'ובס | TenJobs">
+    <meta property="og:description" content="Form 101 — TenJobs">
+    <meta name="robots" content="noindex, nofollow">
     <style>
         * {
             margin: 0;
@@ -619,6 +622,14 @@
             <!-- ג. פרטים על ילדיי -->
             <div class="section">
                 <div class="section-title">ג. פרטים על ילדיי שבשנת המס טרם מלאו להם 19 שנה</div>
+                <!-- 19/11/2026: הטבלה נפתחת רק למי שיש ילדים -->
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="has_children">
+                        <label for="has_children">יש לי ילדים שבשנת המס טרם מלאו להם 19 שנה</label>
+                    </div>
+                </div>
+                <div id="childrenSection" style="display: none;">
                 <div class="note" style="margin-bottom: 10px;">
                     סמן/י V ליד שם הילד: בטור 1 אם הילד נמצא בחזקתך, בטור 2 אם את/ה מקבל/ת בגינו קצבת ילדים מביטוח לאומי.
                 </div>
@@ -628,6 +639,7 @@
                 </div>
 
                 <button type="button" class="btn btn-add" onclick="addChild()">➕ הוסף ילד/ה</button>
+                </div>
             </div>
 
             <!-- Next sections continue... -->
@@ -747,7 +759,7 @@
             </div>
 
             <!-- ו. פרטים על בן/בת הזוג -->
-            <div class="section">
+            <div class="section" id="spouseSection" style="display: none;">
                 <div class="section-title">ו. פרטים על בן/בת הזוג</div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
@@ -814,6 +826,13 @@
             <!-- ז. שינויים במהלך השנה -->
             <div class="section">
                 <div class="section-title">ז. שינויים במהלך השנה</div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="has_changes">
+                        <label for="has_changes">יש שינויים במהלך השנה</label>
+                    </div>
+                </div>
+                <div id="changesSection" style="display: none;">
                 <div class="note" style="margin-bottom: 10px;">
                     כולל שינויים הקשורים לבקשה להקלה בחישוב המס
                 </div>
@@ -842,6 +861,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <!-- ח. בקשה להקלה - FULL VERSION -->
@@ -859,6 +879,13 @@
                             <label for="relief_1"><strong>1.</strong> אני תושב/ת ישראל</label>
                         </div>
                     </div>
+
+                    <!-- 19/11/2026: סעיפים 2–17 נפתחים רק למי שמבקש -->
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="more_reliefs">
+                        <label for="more_reliefs">אני מבקש/ת פטורים או זיכויים נוספים (סעיפים 2–17)</label>
+                    </div>
+                    <div id="moreReliefsSection" style="display: none; flex-direction: column; gap: 12px;">
 
                     <!-- 2. נכה/עיוור -->
                     <div class="subsection">
@@ -1101,6 +1128,7 @@
                         </div>
                         <div class="note">הערות: 1. יש להמציא הוכחה כגון: אישור משטרת הגבולות בגין שהייה בחו"ל, אישור מחלה וכיו"ב. בהעדר הוכחה יש לפנות לפקיד השומה. 2. דמי לידה ודמי אבטלה הינם הכנסה חייבת.</div>
                     </div>
+                    </div>
                 </div>
             </div>
 
@@ -1192,7 +1220,8 @@
 
             <!-- דברי הסבר למילוי טופס 101 -->
             <div class="explanations">
-                <h4>📖 דברי הסבר למילוי טופס 101</h4>
+                <details id="explDetails">
+                <summary style="cursor: pointer;"><h4 style="display: inline;">📖 דברי הסבר למילוי טופס 101</h4></summary>
                 
                 <ol>
                     <li><strong>(1) "עובד"</strong> - יחיד המקבל משכורת. <strong>"מעסיק"</strong> - אדם המשלם משכורת. <strong>"משכורת"</strong> - הכנסת עבודה, קיצבה, מענק עקב פרישה או מוות, מילגה וכיו"ב. <strong>"עבודה"</strong> - לרבות קבלת משכורת. <strong>"מלגה"</strong> - לרבות מענק, פרס או פטור מתשלום שניתן לסטודנט או לחוקר.</li>
@@ -1232,6 +1261,7 @@
                         <li>מסירת פרטים שגויים מהווה עבירה על פקודת מס הכנסה</li>
                     </ul>
                 </div>
+                </details>
             </div>
 
             <!-- Loading & Messages -->
@@ -1276,6 +1306,22 @@
         const LINK_PARAMS = (function() {
             try { return new URLSearchParams(window.location.search); } catch (e) { return new URLSearchParams(''); }
         })();
+        /* 19/11/2026: סעיף בן/בת הזוג מוצג רק לנשוי/אה; אחרת מוסתר ומתנקה */
+        function syncSpouse() {
+            const ms = (document.querySelector('input[name="marital_status"]:checked') || {}).value || '';
+            const married = ms.startsWith('נשוי');
+            const sec = document.getElementById('spouseSection');
+            const hs = document.getElementById('has_spouse');
+            sec.style.display = married ? 'block' : 'none';
+            if (married && !hs.checked) { hs.checked = true; hs.dispatchEvent(new Event('change')); }
+            if (!married) {
+                sec.querySelectorAll('input,select,textarea').forEach(i => {
+                    if (i.type === 'checkbox' || i.type === 'radio') i.checked = false; else i.value = '';
+                });
+                document.getElementById('spouseDetails').style.display = 'none';
+            }
+        }
+
         function applyLinkPrefill() {
             const map = { fn: 'first_name', ln: 'last_name', phone: 'mobile_phone', start: 'start_date',
                           en: 'employer_name', et: 'employer_tax_id', ea: 'employer_address', ep: 'employer_phone' };
@@ -1333,6 +1379,26 @@
             document.getElementById('has_spouse').addEventListener('change', function() {
                 document.getElementById('spouseDetails').style.display =
                     this.checked ? 'block' : 'none';
+            });
+
+            /* 19/11/2026 — סעיפים לפי תנאי (ניסים) */
+            const clearInputs = el => el.querySelectorAll('input,select,textarea').forEach(i => {
+                if (i.type === 'checkbox' || i.type === 'radio') i.checked = false; else i.value = '';
+            });
+            document.querySelectorAll('input[name="marital_status"]').forEach(r => r.addEventListener('change', syncSpouse));
+            document.getElementById('has_children').addEventListener('change', function() {
+                document.getElementById('childrenSection').style.display = this.checked ? 'block' : 'none';
+                if (!this.checked) { document.getElementById('childrenContainer').innerHTML = ''; childCount = 0; addChild(); }
+            });
+            document.getElementById('has_changes').addEventListener('change', function() {
+                const sec = document.getElementById('changesSection');
+                sec.style.display = this.checked ? 'block' : 'none';
+                if (!this.checked) clearInputs(sec);
+            });
+            document.getElementById('more_reliefs').addEventListener('change', function() {
+                const sec = document.getElementById('moreReliefsSection');
+                sec.style.display = this.checked ? 'flex' : 'none';
+                if (!this.checked) clearInputs(sec);
             });
 
             document.getElementById('has_tax_coordination').addEventListener('change', function() {
@@ -1875,6 +1941,12 @@ function i18nApply() {
   document.documentElement.dir = I18N_META[I18N_LANG].dir;
   document.documentElement.lang = I18N_LANG;
 }
+/* 19/11/2026 — משפטים חדשים (תיגרינית: Google + תרגום חוזר) */
+Object.assign(I18N_DICT, {
+  "יש לי ילדים שבשנת המס טרם מלאו להם 19 שנה": ["I have children who are under 19 in the tax year", "ኣብ ዓመት ግብሪ ትሕቲ 19 ዓመት ዝኾኑ ቆልዑ ኣለዉኒ", "У меня есть дети, которым в налоговом году нет 19 лет", "لدي أولاد لم يبلغوا 19 عامًا في سنة الضريبة"],
+  "יש שינויים במהלך השנה": ["There were changes during the year", "ኣብ ውሽጢ ዓመት ለውጢ ተራእዩ", "В течение года были изменения", "حدثت تغييرات خلال السنة"],
+  "אני מבקש/ת פטורים או זיכויים נוספים (סעיפים 2–17)": ["I am requesting additional exemptions or tax credits (items 2–17)", "ተወሳኺ ነጻነት ወይ ምጉዳል ግብሪ እሓትት ኣለኹ (ነጥብታት 2–17)", "Я прошу дополнительные освобождения или льготы (пункты 2–17)", "أطلب إعفاءات أو خصومات ضريبية إضافية (البنود 2–17)"]
+});
 function setLang(l) {
   I18N_LANG = l;
   document.querySelectorAll('#langBar button').forEach(b => b.classList.toggle('active', b.dataset.lang === l));
